@@ -4,7 +4,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthContext'
 
 const navigation = [
-  { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/clients', label: 'Clients', icon: Users },
   { to: '/submissions', label: 'Submissions', icon: Send },
   { to: '/payments', label: 'Payments', icon: CreditCard },

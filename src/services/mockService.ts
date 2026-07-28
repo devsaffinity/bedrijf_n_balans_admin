@@ -1,29 +1,36 @@
 import { clients, documents, payments, submissions } from '../mock/data'
-import type { Client, ClientStatus, Submission, SubmissionStatus } from '../types/domain'
+import type { Client, ClientDocument, ClientStatus, DocumentStatus, Payment, Submission, SubmissionStatus } from '../types/domain'
 
 const wait = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms))
 const copy = <T,>(value: T): T => structuredClone(value)
 
+export const submissionTransitions: Record<SubmissionStatus, SubmissionStatus[]> = {
+  Pending: ['Accepted', 'Rejected', 'Deleted'],
+  Accepted: ['Deleted'],
+  Rejected: ['Pending', 'Deleted'],
+  Deleted: [],
+}
+
 export const adminService = {
+  getAllowedSubmissionStatuses(status: SubmissionStatus) { return copy(submissionTransitions[status]) },
   async getClients() { await wait(); return copy(clients) },
   async getClient(id: string) { await wait(); return copy(clients.find((item) => item.id === id) ?? null) },
   async updateClientStatus(id: string, status: ClientStatus): Promise<Client> {
     await wait(450)
     const client = clients.find((item) => item.id === id)
     if (!client) throw new Error('Client not found.')
+    if (client.status === 'Deleted' || status === 'Deleted') throw new Error('Deleted status can only be applied through the delete action.')
     client.status = status
     return copy(client)
   },
-  async deleteClient(id: string): Promise<void> {
+  async deleteClient(id: string): Promise<Client> {
     await wait(450)
-    const clientIndex = clients.findIndex((item) => item.id === id)
-    if (clientIndex === -1) throw new Error('Client not found.')
-    clients.splice(clientIndex, 1)
-    for (const records of [submissions, payments, documents]) {
-      for (let index = records.length - 1; index >= 0; index -= 1) {
-        if (records[index].clientId === id) records.splice(index, 1)
-      }
-    }
+    const client = clients.find((item) => item.id === id)
+    if (!client) throw new Error('Client not found.')
+    if (client.status === 'Deleted') throw new Error('Client is already deleted.')
+    client.status = 'Deleted'
+    client.deletedAt = new Date().toISOString()
+    return copy(client)
   },
   async getSubmissions() { await wait(); return copy(submissions) },
   async getSubmission(id: string) { await wait(); return copy(submissions.find((item) => item.id === id) ?? null) },
@@ -31,29 +38,35 @@ export const adminService = {
     await wait(450)
     const submission = submissions.find((item) => item.id === id)
     if (!submission) throw new Error('Submission not found.')
+    if (!submissionTransitions[submission.status].includes(status)) throw new Error(`Cannot move a submission from ${submission.status} to ${status}.`)
     submission.status = status
     submission.updatedAt = new Date().toISOString()
+    if (status === 'Deleted') submission.deletedAt = submission.updatedAt
     return copy(submission)
   },
-  async deleteSubmission(id: string): Promise<void> {
-    await wait(450)
-    const submissionIndex = submissions.findIndex((item) => item.id === id)
-    if (submissionIndex === -1) throw new Error('Submission not found.')
-    submissions.splice(submissionIndex, 1)
-    for (const records of [payments, documents]) {
-      for (let index = records.length - 1; index >= 0; index -= 1) {
-        if (records[index].submissionId === id) records.splice(index, 1)
-      }
-    }
+  async reviewSubmission(id: string, decision: 'Accepted' | 'Rejected'): Promise<Submission> {
+    return this.updateSubmissionStatus(id, decision)
   },
   async getPayments() { await wait(); return copy(payments) },
-  async deletePayment(id: string): Promise<void> {
+  async refundPayment(id: string): Promise<Payment> {
     await wait(450)
-    const paymentIndex = payments.findIndex((item) => item.id === id)
-    if (paymentIndex === -1) throw new Error('Payment not found.')
-    payments.splice(paymentIndex, 1)
+    const payment = payments.find((item) => item.id === id)
+    if (!payment) throw new Error('Payment not found.')
+    if (payment.status !== 'Paid') throw new Error('Only paid payments can be refunded.')
+    payment.status = 'Refunded'
+    payment.refundedAt = new Date().toISOString()
+    return copy(payment)
   },
   async getDocuments() { await wait(); return copy(documents) },
+  async reviewDocument(id: string, decision: Extract<DocumentStatus, 'Approved' | 'Rejected'>): Promise<ClientDocument> {
+    await wait(450)
+    const document = documents.find((item) => item.id === id)
+    if (!document) throw new Error('Document not found.')
+    if (document.status !== 'Pending review') throw new Error('Only pending documents can be reviewed.')
+    document.status = decision
+    document.reviewedAt = new Date().toISOString()
+    return copy(document)
+  },
   async getClientRelations(clientId: string) {
     await wait()
     return copy({
@@ -61,13 +74,5 @@ export const adminService = {
       payments: payments.filter((item) => item.clientId === clientId),
       documents: documents.filter((item) => item.clientId === clientId),
     })
-  },
-  async reopenSubmission(id: string): Promise<Submission> {
-    await wait(650)
-    const item = submissions.find((submission) => submission.id === id)
-    if (!item || item.status !== 'Locked') throw new Error('This submission cannot be reopened.')
-    item.status = 'Reopened'
-    item.updatedAt = new Date().toISOString()
-    return copy(item)
   },
 }

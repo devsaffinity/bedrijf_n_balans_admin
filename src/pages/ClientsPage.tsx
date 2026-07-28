@@ -60,8 +60,9 @@ export function ClientsPage() {
     try {
       await adminService.deleteClient(deletingClient.id)
       setDeletingClient(null)
+      setPage(1)
       await retry()
-      toast.success('Client deleted.')
+      toast.success('Client deleted. Related records were preserved for audit history.')
     } catch (deleteError) {
       toast.error(deleteError instanceof Error ? deleteError.message : 'Unable to delete client.')
     } finally {
@@ -79,6 +80,7 @@ export function ClientsPage() {
         <select className="field sm:!w-44 sm:shrink-0" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1) }} aria-label="Filter client status">
           <option>All</option>
           {clientStatuses.map((clientStatus) => <option key={clientStatus}>{clientStatus}</option>)}
+          <option>Deleted</option>
         </select>
       </DataToolbar>
       {rows.length ? <div className="overflow-x-auto"><table className="desktop-table w-full border-collapse text-left text-sm md:min-w-[950px]">
@@ -99,7 +101,7 @@ export function ClientsPage() {
           <td data-label="Actions" className="px-4 py-3 xl:px-6 xl:py-4"><div className="flex min-w-max gap-1">
             <Link className="rounded-md p-2 text-slate-600 hover:bg-slate-100" to={`/clients/${client.id}`} aria-label={`View ${client.name} details`} title="View details"><Eye size={18} /></Link>
             <button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" onClick={() => openStatusEditor(client)} aria-label={`Edit ${client.name} status`} title="Edit status"><Pencil size={18} /></button>
-            <button className="rounded-md p-2 text-red-600 hover:bg-red-50" onClick={() => setDeletingClient(client)} aria-label={`Delete ${client.name}`} title="Delete client"><Trash2 size={18} /></button>
+            {client.status !== 'Deleted' && <button className="rounded-md p-2 text-red-600 hover:bg-red-50" onClick={() => setDeletingClient(client)} aria-label={`Delete ${client.name}`} title="Delete client"><Trash2 size={18} /></button>}
           </div></td>
         </tr>)}</tbody>
       </table></div> : <EmptyState />}
@@ -117,7 +119,7 @@ export function ClientsPage() {
       </div>
     </Modal>
     <Modal open={Boolean(deletingClient)} title="Delete client?" onClose={() => !deleting && setDeletingClient(null)}>
-      <p className="mt-3 text-sm leading-6 text-[var(--color-muted)]">This will permanently delete {deletingClient?.name} and all related submissions, payments, and documents.</p>
+      <p className="mt-3 text-sm leading-6 text-[var(--color-muted)]">This removes {deletingClient?.name} from active work while preserving submissions, payments, and documents for audit history.</p>
       <div className="mt-6 flex justify-end gap-3">
         <button className="btn btn-secondary" disabled={deleting} onClick={() => setDeletingClient(null)}>Cancel</button>
         <button className="btn bg-red-600 text-white hover:bg-red-700" disabled={deleting} onClick={deleteClient}>{deleting ? 'Deleting…' : 'Delete client'}</button>

@@ -1,9 +1,7 @@
-import { ArrowLeft, CalendarDays, LockKeyhole, RotateCcw } from 'lucide-react'
-import { useCallback, useState } from 'react'
-import toast from 'react-hot-toast'
+import { ArrowLeft, CalendarDays, FileCheck2 } from 'lucide-react'
+import { useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
-import { Modal } from '../components/ui/Modal'
 import { ErrorState, LoadingState } from '../components/ui/States'
 import { useAsync } from '../hooks/useAsync'
 import { adminService } from '../services/mockService'
@@ -11,9 +9,17 @@ import { formatDate } from '../utils/format'
 
 export function SubmissionDetailPage() {
   const { submissionId = '' } = useParams()
-  const { data, setData, loading, error, retry } = useAsync(useCallback(() => adminService.getSubmission(submissionId), [submissionId]))
-  const [confirming, setConfirming] = useState(false); const [saving, setSaving] = useState(false)
-  if (loading) return <LoadingState />; if (error) return <ErrorState retry={retry} />; if (!data) return <div className="card p-8 text-center">Submission not found.</div>
-  const reopen = async () => { setSaving(true); try { setData(await adminService.reopenSubmission(data.id)); setConfirming(false); toast.success('Submission reopened successfully.') } catch (reason) { toast.error(reason instanceof Error ? reason.message : 'Could not reopen the submission.') } finally { setSaving(false) } }
-  return <><Link className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-brand)]" to="/submissions"><ArrowLeft size={17} />Back to submissions</Link><header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><div className="mb-2 flex items-center gap-3"><h1 className="text-2xl font-bold sm:text-3xl">{data.id}</h1><Badge>{data.status}</Badge></div><p className="text-sm text-[var(--color-muted)]">{data.clientName} · {data.clientEmail}</p></div>{data.status === 'Locked' && <button className="btn btn-primary" onClick={() => setConfirming(true)}><RotateCcw size={17} />Reopen submission</button>}</header><div className="grid gap-6 lg:grid-cols-[1fr_280px]"><div className="space-y-5">{data.answers.map((section) => <section className="card overflow-hidden" key={section.section}><h2 className="border-b border-[var(--color-border)] bg-slate-50 px-5 py-4 font-bold">{section.section}</h2><dl className="divide-y divide-[var(--color-border)]">{section.items.map((item) => <div className="grid gap-1 px-5 py-4 sm:grid-cols-[1fr_1.1fr] sm:gap-6" key={item.question}><dt className="text-sm text-[var(--color-muted)]">{item.question}</dt><dd className="text-sm font-semibold sm:text-right">{item.answer}</dd></div>)}</dl></section>)}</div><aside className="card h-fit p-5"><h2 className="font-bold">Submission details</h2><dl className="mt-5 space-y-4 text-sm"><div><dt className="flex items-center gap-2 text-[var(--color-muted)]"><CalendarDays size={15} />Submitted</dt><dd className="mt-1 font-semibold">{formatDate(data.submittedAt)}</dd></div><div><dt className="flex items-center gap-2 text-[var(--color-muted)]"><LockKeyhole size={15} />Editing state</dt><dd className="mt-1 font-semibold">{data.status === 'Locked' ? 'Client editing locked' : data.status === 'Reopened' ? 'Client editing enabled' : 'In progress'}</dd></div><div><dt className="text-[var(--color-muted)]">Filing type</dt><dd className="mt-1 font-semibold">{data.filingType}</dd></div><div><dt className="text-[var(--color-muted)]">Completion</dt><dd className="mt-1 font-semibold">{data.progress}%</dd></div></dl></aside></div><Modal open={confirming} title="Reopen this submission?" onClose={() => !saving && setConfirming(false)}><p className="mt-3 text-sm leading-6 text-[var(--color-muted)]">This will unlock the questionnaire and allow {data.clientName} to edit their answers again.</p><div className="mt-6 flex justify-end gap-3"><button className="btn btn-secondary" disabled={saving} onClick={() => setConfirming(false)}>Cancel</button><button className="btn btn-primary" disabled={saving} onClick={reopen}>{saving ? 'Reopening…' : 'Reopen submission'}</button></div></Modal></>
+  const { data, loading, error, retry } = useAsync(useCallback(() => adminService.getSubmission(submissionId), [submissionId]))
+  if (loading) return <LoadingState />
+  if (error) return <ErrorState retry={retry} />
+  if (!data) return <div className="card p-8 text-center">Submission not found.</div>
+
+  return <>
+    <Link className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-brand)]" to="/submissions"><ArrowLeft size={17} />Back to submissions</Link>
+    <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><div className="mb-2 flex items-center gap-3"><h1 className="text-2xl font-bold sm:text-3xl">{data.id}</h1><Badge>{data.status}</Badge></div><p className="text-sm text-[var(--color-muted)]">{data.clientName} · {data.clientEmail}</p></div></header>
+    <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+      <div className="space-y-5">{data.answers.map((section) => <section className="card overflow-hidden" key={section.section}><h2 className="border-b border-[var(--color-border)] bg-slate-50 px-5 py-4 font-bold">{section.section}</h2><dl className="divide-y divide-[var(--color-border)]">{section.items.map((item) => <div className="grid gap-1 px-5 py-4 sm:grid-cols-[1fr_1.1fr] sm:gap-6" key={item.question}><dt className="text-sm text-[var(--color-muted)]">{item.question}</dt><dd className="text-sm font-semibold sm:text-right">{item.answer}</dd></div>)}</dl></section>)}</div>
+      <aside className="card h-fit p-5"><h2 className="font-bold">Submission details</h2><dl className="mt-5 space-y-4 text-sm"><div><dt className="flex items-center gap-2 text-[var(--color-muted)]"><CalendarDays size={15} />Submitted</dt><dd className="mt-1 font-semibold">{formatDate(data.submittedAt)}</dd></div><div><dt className="flex items-center gap-2 text-[var(--color-muted)]"><FileCheck2 size={15} />Review state</dt><dd className="mt-1 font-semibold">{data.status}</dd></div><div><dt className="text-[var(--color-muted)]">Filing type</dt><dd className="mt-1 font-semibold">{data.filingType}</dd></div><div><dt className="text-[var(--color-muted)]">Completion</dt><dd className="mt-1 font-semibold">{data.progress}%</dd></div></dl></aside>
+    </div>
+  </>
 }

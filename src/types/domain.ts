@@ -1,7 +1,7 @@
-export type ClientStatus = 'Active' | 'Awaiting submission' | 'Review needed'
-export type SubmissionStatus = 'Open' | 'Completed' | 'Locked' | 'Reopened'
-export type PaymentStatus = 'Paid' | 'Pending' | 'Failed'
-export type DocumentStatus = 'Available' | 'Pending review'
+export type ClientStatus = 'Active' | 'Awaiting submission' | 'Review needed' | 'Deleted'
+export type SubmissionStatus = 'Pending' | 'Accepted' | 'Rejected' | 'Deleted'
+export type PaymentStatus = 'Paid' | 'Pending' | 'Failed' | 'Refunded'
+export type DocumentStatus = 'Available' | 'Pending review' | 'Approved' | 'Rejected'
 
 export interface Client {
   id: string
@@ -11,6 +11,7 @@ export interface Client {
   status: ClientStatus
   filingType: string
   joinedAt: string
+  deletedAt?: string
 }
 
 export interface Submission {
@@ -23,6 +24,7 @@ export interface Submission {
   progress: number
   submittedAt: string | null
   updatedAt: string
+  deletedAt?: string
   answers: { section: string; items: { question: string; answer: string }[] }[]
 }
 
@@ -36,6 +38,7 @@ export interface Payment {
   status: PaymentStatus
   date: string
   reference: string
+  refundedAt?: string
 }
 
 export interface ClientDocument {
@@ -48,4 +51,5 @@ export interface ClientDocument {
   size: string
   uploadedAt: string
   status: DocumentStatus
+  reviewedAt?: string
 }

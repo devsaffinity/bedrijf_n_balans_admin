@@ -17,7 +17,7 @@ export function DashboardPage() {
   if (loading) return <LoadingState label="Preparing your overview…" />
   if (error || !data) return <ErrorState retry={retry} />
   const paid = data.payments.filter((item) => item.status === 'Paid').length
-  const pending = data.submissions.filter((item) => item.status === 'Completed' || item.status === 'Locked').length
+  const pending = data.submissions.filter((item) => item.status === 'Pending').length
   const cards = [
     { label: 'Total clients', value: data.clients.length, icon: Users, tone: 'bg-[var(--color-brand-soft)] text-[var(--color-brand)]' },
     { label: 'Submissions', value: data.submissions.length, icon: Send, tone: 'bg-blue-50 text-blue-700' },

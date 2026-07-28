@@ -4,4 +4,4 @@ export const formatDate = (value: string | null) =>
     : '—'
 
 export const formatMoney = (value: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+  new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(value)

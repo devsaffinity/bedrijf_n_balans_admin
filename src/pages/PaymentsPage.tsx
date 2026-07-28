@@ -1,4 +1,4 @@
-import { Eye, Trash2 } from 'lucide-react'
+import { Eye, RotateCcw } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Badge } from '../components/ui/Badge'
@@ -16,22 +16,22 @@ export function PaymentsPage() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
   const [viewingPayment, setViewingPayment] = useState<Payment | null>(null)
-  const [deletingPayment, setDeletingPayment] = useState<Payment | null>(null)
-  const [deleting, setDeleting] = useState(false)
+  const [refundingPayment, setRefundingPayment] = useState<Payment | null>(null)
+  const [refunding, setRefunding] = useState(false)
   const rows = useMemo(() => (data ?? []).filter((item) => (status === 'All' || item.status === status) && `${item.clientName} ${item.clientEmail} ${item.reference} ${item.submissionId}`.toLowerCase().includes(search.toLowerCase())), [data, search, status])
 
-  const deletePayment = async () => {
-    if (!deletingPayment) return
-    setDeleting(true)
+  const refundPayment = async () => {
+    if (!refundingPayment) return
+    setRefunding(true)
     try {
-      await adminService.deletePayment(deletingPayment.id)
-      setDeletingPayment(null)
+      await adminService.refundPayment(refundingPayment.id)
+      setRefundingPayment(null)
       await retry()
-      toast.success('Payment deleted.')
-    } catch (deleteError) {
-      toast.error(deleteError instanceof Error ? deleteError.message : 'Unable to delete payment.')
+      toast.success('Payment refunded. The original record was preserved.')
+    } catch (refundError) {
+      toast.error(refundError instanceof Error ? refundError.message : 'Unable to refund payment.')
     } finally {
-      setDeleting(false)
+      setRefunding(false)
     }
   }
 
@@ -43,7 +43,7 @@ export function PaymentsPage() {
     <PageHeader title="Payments" description="Track client payment records linked to questionnaire submissions." action={<div className="card px-4 py-2 text-sm"><span className="text-[var(--color-muted)]">Collected </span><strong>{formatMoney(collected)}</strong></div>} />
     <section className="card overflow-hidden">
       <DataToolbar search={search} onSearch={setSearch} placeholder="Search client, reference or submission">
-        <select className="field sm:!w-44 sm:shrink-0" value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter payment status"><option>All</option><option>Paid</option><option>Pending</option><option>Failed</option></select>
+        <select className="field sm:!w-44 sm:shrink-0" value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter payment status"><option>All</option><option>Paid</option><option>Pending</option><option>Failed</option><option>Refunded</option></select>
       </DataToolbar>
       {rows.length ? <table className="desktop-table w-full text-left text-sm">
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-[var(--color-muted)]"><tr>
@@ -58,7 +58,7 @@ export function PaymentsPage() {
           <td data-label="Status" className="px-4 py-3"><Badge>{item.status}</Badge></td>
           <td data-label="Actions" className="px-4 py-3 text-right"><div className="flex min-w-max justify-end gap-1">
             <button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" onClick={() => setViewingPayment(item)} aria-label={`View payment ${item.reference}`} title="View details"><Eye size={18} /></button>
-            <button className="rounded-md p-2 text-red-600 hover:bg-red-50" onClick={() => setDeletingPayment(item)} aria-label={`Delete payment ${item.reference}`} title="Delete payment"><Trash2 size={18} /></button>
+            {item.status === 'Paid' && <button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" onClick={() => setRefundingPayment(item)} aria-label={`Refund payment ${item.reference}`} title="Refund payment"><RotateCcw size={18} /></button>}
           </div></td>
         </tr>)}</tbody>
       </table> : <EmptyState />}
@@ -73,11 +73,11 @@ export function PaymentsPage() {
         <div><dt className="text-[var(--color-muted)]">Date</dt><dd className="mt-1 font-semibold">{formatDate(viewingPayment.date)}</dd></div>
       </dl>}
     </Modal>
-    <Modal open={Boolean(deletingPayment)} title="Delete payment?" onClose={() => !deleting && setDeletingPayment(null)}>
-      <p className="mt-3 text-sm leading-6 text-[var(--color-muted)]">This will permanently delete payment {deletingPayment?.reference} for {deletingPayment?.clientName}.</p>
+    <Modal open={Boolean(refundingPayment)} title="Refund payment?" onClose={() => !refunding && setRefundingPayment(null)}>
+      <p className="mt-3 text-sm leading-6 text-[var(--color-muted)]">Refund {formatMoney(refundingPayment?.amount ?? 0)} for {refundingPayment?.clientName}? The payment record will remain available for audit history.</p>
       <div className="mt-6 flex justify-end gap-3">
-        <button className="btn btn-secondary" disabled={deleting} onClick={() => setDeletingPayment(null)}>Cancel</button>
-        <button className="btn bg-red-600 text-white hover:bg-red-700" disabled={deleting} onClick={deletePayment}>{deleting ? 'Deleting…' : 'Delete payment'}</button>
+        <button className="btn btn-secondary" disabled={refunding} onClick={() => setRefundingPayment(null)}>Cancel</button>
+        <button className="btn btn-primary" disabled={refunding} onClick={refundPayment}>{refunding ? 'Refunding…' : 'Confirm refund'}</button>
       </div>
     </Modal>
   </>
