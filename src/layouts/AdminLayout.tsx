@@ -28,7 +28,7 @@ export function AdminLayout() {
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col bg-[var(--color-brand-dark)] md:flex">{sidebar}</aside>
       {open && <div className="fixed inset-0 z-50 md:hidden"><button className="absolute inset-0 bg-slate-950/45" onClick={() => setOpen(false)} aria-label="Close navigation overlay" /><aside className="relative flex h-full w-72 flex-col bg-[var(--color-brand-dark)]">{sidebar}</aside></div>}
       <div className="md:pl-64">
-        <header className="sticky top-0 z-30 flex h-18 items-center justify-between border-b border-[var(--color-border)] bg-white/95 px-4 backdrop-blur sm:px-6 lg:px-8"><button className="rounded-lg border border-[var(--color-border)] p-2 md:hidden" onClick={() => setOpen(true)} aria-label="Open navigation"><Menu size={20} /></button><div className="hidden text-sm font-bold text-[var(--color-ink)] sm:block">Welcome to your dashboard</div></header>
+        <header className="sticky top-0 z-30 flex h-18 items-center justify-between border-b border-[var(--color-border)] bg-white/95 px-4 backdrop-blur sm:px-6 lg:px-8"><button className="rounded-lg border border-[var(--color-border)] p-2 md:hidden" onClick={() => setOpen(true)} aria-label="Open navigation"><Menu size={20} /></button><div className="hidden text-2xl font-bold tracking-tight text-[var(--color-ink)] sm:block sm:text-3xl">Welcome to dashboard!</div></header>
         <main className="mx-auto w-full max-w-[1800px] p-4 sm:p-6 lg:p-8 xl:px-10 2xl:px-12"><Outlet /></main>
       </div>
     </div>
