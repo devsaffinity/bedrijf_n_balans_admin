@@ -1,3 +1,4 @@
+import { filingProgress } from '../submissions/progress'
 import type { Payment, Submission } from '../../types/domain'
 import type { FilingPeople, FilingPlan, FilingType } from './plans'
 
@@ -43,7 +44,7 @@ export function subscriptionProgress(record: Subscription, submissions: Submissi
   const payment = submission ? payments.filter((item) => item.submissionId === submission.id && item.clientId === record.clientId).sort((a, b) => b.date.localeCompare(a.date))[0] : undefined
   return {
     submission,
-    submissionStatus: !submission ? 'Not submitted' : submission.status === 'Pending' ? (submission.submittedAt ? 'Submitted' : 'Draft') : submission.status,
+    submissionStatus: submission ? filingProgress(submission, payments).current : 'Not submitted',
     paymentStatus: payment ? (payment.status === 'Pending' ? 'Payment pending' : payment.status) : 'No payment',
   }
 }

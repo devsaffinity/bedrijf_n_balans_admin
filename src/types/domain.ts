@@ -2,6 +2,7 @@ export type ClientStatus = 'Active' | 'Awaiting submission' | 'Review needed' | 
 export type SubmissionStatus = 'Pending' | 'Accepted' | 'Rejected' | 'Deleted'
 export type PaymentStatus = 'Paid' | 'Pending' | 'Failed' | 'Refunded'
 export type DocumentStatus = 'Available' | 'Pending review' | 'Approved' | 'Rejected'
+export type FilingStage = 'Not started' | 'Filing in Progress' | 'Submitted to Tax Authority'
 
 export interface Client {
   id: string
@@ -32,6 +33,9 @@ export interface Submission {
   status: SubmissionStatus
   progress: number
   submittedAt: string | null
+  filingStage?: FilingStage
+  filingStartedAt?: string
+  taxAuthoritySubmittedAt?: string
   updatedAt: string
   deletedAt?: string
   answers: { section: string; items: { question: string; answer: string }[] }[]
