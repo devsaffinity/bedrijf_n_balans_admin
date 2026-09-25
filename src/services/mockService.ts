@@ -1,6 +1,7 @@
 import { clients, documents, payments, submissions } from '../mock/data'
 import type { Client, ClientDocument, ClientStatus, DocumentStatus, FilingStage, Payment, Submission, SubmissionStatus } from '../types/domain'
 import { applyFilingStage } from '../features/submissions/progress'
+import { reopenSubmission } from '../features/submissions/editingAccess'
 
 const wait = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms))
 const copy = <T,>(value: T): T => structuredClone(value)
@@ -34,6 +35,13 @@ export const adminService = {
     return copy(client)
   },
   async getSubmissions() { await wait(); return copy(submissions) },
+  async reopenSubmission(id: string): Promise<Submission> {
+    await wait(450)
+    const submission = submissions.find((item) => item.id === id)
+    if (!submission) throw new Error('Submission not found.')
+    Object.assign(submission, reopenSubmission(submission, new Date().toISOString()))
+    return copy(submission)
+  },
   async updateFilingStage(id: string, stage: FilingStage): Promise<Submission> {
     await wait(450)
     const submission = submissions.find((item) => item.id === id)

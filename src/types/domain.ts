@@ -33,6 +33,8 @@ export interface Submission {
   status: SubmissionStatus
   progress: number
   submittedAt: string | null
+  editingUnlocked?: boolean
+  reopenedAt?: string
   filingStage?: FilingStage
   filingStartedAt?: string
   taxAuthoritySubmittedAt?: string

@@ -1,3 +1,4 @@
+import { submissionEditingAccess } from './editingAccess'
 import { Link } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import type { ClientDocument, Payment, Submission } from '../../types/domain'
@@ -12,7 +13,7 @@ export function SubmissionReviewDetails({ submission, payments, documents }: { s
       <dl className="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
         <div className="min-w-0"><dt className="text-[var(--color-muted)]">Client</dt><dd className="mt-1 font-semibold"><Link className="text-[var(--color-brand)] hover:underline" to={`/clients/${submission.clientId}`}>{submission.clientName}</Link></dd></div>
         {[
-          ['Email', submission.clientEmail], ['Submission ID', submission.id], ['Filing type', submission.filingType],
+          ['Email', submission.clientEmail], ['Editing access', submissionEditingAccess(submission)], ['Submission ID', submission.id], ['Filing type', submission.filingType],
           ['Submitted', submission.submittedAt ? formatDate(submission.submittedAt) : 'Not submitted'], ['Last updated', formatDate(submission.updatedAt)],
           ['Questionnaire completion', `${submission.progress}%`],
         ].map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-[var(--color-muted)]">{label}</dt><dd className="mt-1 break-words font-semibold">{value}</dd></div>)}

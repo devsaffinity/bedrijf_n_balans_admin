@@ -1,4 +1,4 @@
-import { Eye, Pencil, Trash2 } from 'lucide-react'
+import { Eye, Pencil, RotateCcw, Trash2 } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
@@ -10,6 +10,7 @@ import { EmptyState, ErrorState, LoadingState } from '../components/ui/States'
 import { useAsync } from '../hooks/useAsync'
 import { adminService } from '../services/mockService'
 import { FilingProgress } from '../components/ui/FilingProgress'
+import { canReopenSubmission, submissionEditingAccess } from '../features/submissions/editingAccess'
 import { filingProgress, filingStages } from '../features/submissions/progress'
 import { SubmissionReviewDetails } from '../features/submissions/SubmissionReviewDetails'
 import { payments, documents } from '../mock/data'
@@ -27,6 +28,8 @@ export function SubmissionsPage() {
   const [saving, setSaving] = useState(false)
   const [deletingSubmission, setDeletingSubmission] = useState<Submission | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [reopeningSubmission, setReopeningSubmission] = useState<Submission | null>(null)
+  const [reopening, setReopening] = useState(false)
   const rows = useMemo(() => (data ?? []).filter((item) => (status === 'All' || filingProgress(item, payments).current === status) && `${item.id} ${item.clientName} ${item.clientEmail}`.toLowerCase().includes(search.toLowerCase())), [data, search, status])
 
   const openStatusEditor = (submission: Submission) => {
@@ -46,6 +49,21 @@ export function SubmissionsPage() {
       toast.error(saveError instanceof Error ? saveError.message : 'Unable to update submission status.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const confirmReopen = async () => {
+    if (!reopeningSubmission) return
+    setReopening(true)
+    try {
+      await adminService.reopenSubmission(reopeningSubmission.id)
+      setReopeningSubmission(null)
+      await retry()
+      toast.success('Submission reopened for editing.')
+    } catch (reopenError) {
+      toast.error(reopenError instanceof Error ? reopenError.message : 'Unable to reopen submission.')
+    } finally {
+      setReopening(false)
     }
   }
 
@@ -83,6 +101,7 @@ export function SubmissionsPage() {
           <th className="px-4 py-3">Email</th>
           <th className="px-4 py-3">Updated</th>
           <th className="px-4 py-3">Current stage</th>
+          <th className="px-4 py-3">Editing access</th>
           <th className="px-4 py-3">Filing progress</th>
           <th className="px-4 py-3 text-right">Actions</th>
         </tr></thead>
@@ -92,10 +111,12 @@ export function SubmissionsPage() {
           <td data-label="Email" className="px-4 py-3 text-(--color-muted)">{item.clientEmail}</td>
           <td data-label="Updated" className="px-4 py-3 text-(--color-muted)">{formatDate(item.updatedAt)}</td>
           <td data-label="Current stage" className="px-4 py-3"><Badge>{filingProgress(item, payments).current}</Badge></td>
+          <td data-label="Editing access" className="px-4 py-3"><Badge>{submissionEditingAccess(item)}</Badge></td>
           <td data-label="Filing progress" className="px-4 py-4"><FilingProgress submission={item} payments={payments} compact /></td>
           <td data-label="Actions" className="px-4 py-3 text-right"><div className="flex min-w-max justify-end gap-1">
             <Link className="rounded-md p-2 text-slate-600 hover:bg-slate-100" to={`/submissions/${item.id}`} aria-label={`View ${item.id} details`} title="View details"><Eye size={18} /></Link>
             {item.status !== 'Deleted' && <button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" onClick={() => openStatusEditor(item)} aria-label={`Edit filing progress for ${item.id}`} title="Edit filing progress"><Pencil size={18} /></button>}
+            {canReopenSubmission(item) && <button className="rounded-md p-2 text-violet-700 hover:bg-violet-50" onClick={() => setReopeningSubmission(item)} aria-label={`Reopen submission ${item.id}`} title="Reopen submission"><RotateCcw size={18} /></button>}
             {item.status !== 'Deleted' && <button className="rounded-md p-2 text-red-600 hover:bg-red-50" onClick={() => setDeletingSubmission(item)} aria-label={`Delete ${item.id}`} title="Delete submission"><Trash2 size={18} /></button>}
           </div></td>
         </tr>)}</tbody>
@@ -118,6 +139,10 @@ export function SubmissionsPage() {
         </div>
         <div className="mt-5 flex justify-end gap-3 border-t border-[var(--color-border)] pt-4"><button className="btn btn-secondary" disabled={saving} onClick={() => setEditingSubmission(null)}>Cancel</button><button className="btn btn-primary" disabled={saving || selectedStatus === (editingSubmission.filingStage ?? 'Not started')} onClick={saveStatus}>{saving ? 'Saving...' : 'Save progress'}</button></div>
       </>}
+    </Modal>
+    <Modal open={Boolean(reopeningSubmission)} title="Reopen submission?" onClose={() => !reopening && setReopeningSubmission(null)}>
+      <p className="mt-4 text-sm leading-6 text-[var(--color-muted)]">Reopen <strong>{reopeningSubmission?.id}</strong> for <strong>{reopeningSubmission?.clientName}</strong>? This allows the client to edit their questionnaire again. Existing answers, documents, payments, and filing progress will be preserved.</p>
+      <div className="mt-6 flex justify-end gap-3"><button className="btn btn-secondary" disabled={reopening} onClick={() => setReopeningSubmission(null)}>Cancel</button><button className="btn btn-primary" disabled={reopening} onClick={confirmReopen}>{reopening ? 'Reopening...' : 'Reopen submission'}</button></div>
     </Modal>
     <Modal open={Boolean(deletingSubmission)} title="Delete submission?" onClose={() => !deleting && setDeletingSubmission(null)}>
       <p className="mt-3 text-sm leading-6 text-(--color-muted)">This removes {deletingSubmission?.id} from active work while preserving its payments and documents for audit history.</p>
