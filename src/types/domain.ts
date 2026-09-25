@@ -8,6 +8,15 @@ export interface Client {
   name: string
   email: string
   phone: string
+  nationality?: string
+  city?: string
+  maritalStatus?: 'Single' | 'Married' | 'Living together' | 'Divorced' | 'Widowed'
+  dateOfMarriage?: string
+  registrationDate?: string
+  originCountry?: string
+  emigratedFromNetherlands?: boolean
+  emigrationDate?: string
+  destinationCountry?: string
   status: ClientStatus
   filingType: string
   joinedAt: string
