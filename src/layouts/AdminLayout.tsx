@@ -8,7 +8,7 @@ const navigation = [
   { to: '/clients', label: 'Clients', icon: Users },
   { to: '/submissions', label: 'Submissions', icon: Send },
   { to: '/subscriptions', label: 'Subscriptions', icon: Tags },
-  { to: '/payments', label: 'Payments', icon: CreditCard },
+  { to: '/plans', label: 'Plan', icon: CreditCard },
   { to: '/documents', label: 'Documents', icon: FileText },
 ]
 

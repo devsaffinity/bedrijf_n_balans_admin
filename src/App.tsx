@@ -10,7 +10,7 @@ const ClientsPage = lazy(() => import('./pages/ClientsPage').then((module) => ({
 const ClientDetailPage = lazy(() => import('./pages/ClientDetailPage').then((module) => ({ default: module.ClientDetailPage })))
 const SubmissionsPage = lazy(() => import('./pages/SubmissionsPage').then((module) => ({ default: module.SubmissionsPage })))
 const SubmissionDetailPage = lazy(() => import('./pages/SubmissionDetailPage').then((module) => ({ default: module.SubmissionDetailPage })))
-const PaymentsPage = lazy(() => import('./pages/PaymentsPage').then((module) => ({ default: module.PaymentsPage })))
+const PlansPage = lazy(() => import('./pages/PlansPage').then((module) => ({ default: module.PlansPage })))
 const DocumentsPage = lazy(() => import('./pages/DocumentsPage').then((module) => ({ default: module.DocumentsPage })))
 const SubscriptionsPage = lazy(() => import('./pages/SubscriptionsPage').then((module) => ({ default: module.SubscriptionsPage })))
 
@@ -25,7 +25,8 @@ export default function App() {
           <Route path="clients/:clientId" element={<ClientDetailPage />} />
           <Route path="submissions" element={<SubmissionsPage />} />
           <Route path="submissions/:submissionId" element={<SubmissionDetailPage />} />
-          <Route path="payments" element={<PaymentsPage />} />
+          <Route path="plans" element={<PlansPage />} />
+          <Route path="payments" element={<Navigate to="/plans" replace />} />
           <Route path="documents" element={<DocumentsPage />} />
           <Route path="subscriptions" element={<SubscriptionsPage />} />
         </Route>

@@ -40,7 +40,7 @@ export function PaymentsPage() {
   const collected = (data ?? []).filter((item) => item.status === 'Paid').reduce((sum, item) => sum + item.amount, 0)
 
   return <>
-    <PageHeader title="Payments" description="Track client payment records linked to questionnaire submissions." action={<div className="card px-4 py-2 text-sm"><span className="text-[var(--color-muted)]">Collected </span><strong>{formatMoney(collected)}</strong></div>} />
+    <PageHeader title="Plan" description="Track client payment records linked to questionnaire submissions." action={<div className="card px-4 py-2 text-sm"><span className="text-[var(--color-muted)]">Collected </span><strong>{formatMoney(collected)}</strong></div>} />
     <section className="card overflow-hidden">
       <DataToolbar search={search} onSearch={setSearch} placeholder="Search client, reference or submission">
         <select className="field sm:!w-44 sm:shrink-0" value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter payment status"><option>All</option><option>Paid</option><option>Pending</option><option>Failed</option><option>Refunded</option></select>

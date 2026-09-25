@@ -26,7 +26,7 @@ export function SubscriptionsPage() {
   const [viewing, setViewing] = useState<Subscription | null>(null)
   const [editing, setEditing] = useState<Subscription | null>(null)
   const [nextStatus, setNextStatus] = useState<SubscriptionStatus>('Active')
-  const plans = planService.getPlans()
+  const plans = planService.getPlans(true)
   const stats = subscriptionStats(records)
   const planName = (id: string) => plans.find((plan) => plan.id === id)?.name ?? id
   const clientFor = (record: Subscription) => clients.find((client) => client.id === record.clientId)
