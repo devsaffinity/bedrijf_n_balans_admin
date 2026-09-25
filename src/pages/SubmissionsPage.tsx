@@ -11,7 +11,8 @@ import { useAsync } from '../hooks/useAsync'
 import { adminService } from '../services/mockService'
 import { FilingProgress } from '../components/ui/FilingProgress'
 import { filingProgress, filingStages } from '../features/submissions/progress'
-import { payments } from '../mock/data'
+import { SubmissionReviewDetails } from '../features/submissions/SubmissionReviewDetails'
+import { payments, documents } from '../mock/data'
 import type { FilingStage, Submission } from '../types/domain'
 import { formatDate } from '../utils/format'
 
@@ -100,18 +101,23 @@ export function SubmissionsPage() {
         </tr>)}</tbody>
       </table></div> : <EmptyState />}
     </section>
-    <Modal open={Boolean(editingSubmission)} title="Edit filing progress" onClose={() => !saving && setEditingSubmission(null)}>
-      {editingSubmission && <div className="mt-4 max-h-[70vh] space-y-5 overflow-y-auto pr-1">
-        <p className="text-sm text-[var(--color-muted)]">{editingSubmission.id} ? {editingSubmission.clientName}</p>
-        <FilingProgress submission={{ ...editingSubmission, filingStage: selectedStatus }} payments={payments} />
-        <p className="text-xs leading-5 text-[var(--color-muted)]">Submission Received and Payment Confirmed reflect the questionnaire and payment records. Update the filing stage below.</p>
-        <label className="block text-sm font-semibold" htmlFor="filing-stage">Filing stage</label>
-        <select id="filing-stage" className="field" value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value as FilingStage)} disabled={saving}>
-          {filingStages.map((stage) => <option key={stage} disabled={stage !== 'Not started' && !filingProgress(editingSubmission, payments).canStart}>{stage}</option>)}
-        </select>
-        {!filingProgress(editingSubmission, payments).canStart && <p className="text-sm text-amber-700">Filing can begin once the questionnaire is submitted and payment is confirmed.</p>}
-        <div className="flex justify-end gap-3"><button className="btn btn-secondary" disabled={saving} onClick={() => setEditingSubmission(null)}>Cancel</button><button className="btn btn-primary" disabled={saving || selectedStatus === (editingSubmission.filingStage ?? 'Not started')} onClick={saveStatus}>{saving ? 'Saving...' : 'Save progress'}</button></div>
-      </div>}
+    <Modal open={Boolean(editingSubmission)} title="Review submission & edit filing progress" size="review" onClose={() => !saving && setEditingSubmission(null)}>
+      {editingSubmission && <>
+        <div className="mt-4 grid max-h-[65vh] gap-6 overflow-y-auto pr-2 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <SubmissionReviewDetails submission={editingSubmission} payments={payments} documents={documents} />
+          <aside className="h-fit min-w-0 space-y-5 rounded-lg border border-[var(--color-border)] bg-slate-50 p-4 lg:sticky lg:top-0">
+            <h3 className="font-bold">Filing progress</h3>
+            <FilingProgress submission={{ ...editingSubmission, filingStage: selectedStatus }} payments={payments} />
+            <p className="text-xs leading-5 text-[var(--color-muted)]">Submission Received and Payment Confirmed reflect the questionnaire and payment records. Update the filing stage below.</p>
+            <label className="block text-sm font-semibold" htmlFor="filing-stage">Filing stage</label>
+            <select id="filing-stage" className="field" value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value as FilingStage)} disabled={saving}>
+              {filingStages.map((stage) => <option key={stage} disabled={stage !== 'Not started' && !filingProgress(editingSubmission, payments).canStart}>{stage}</option>)}
+            </select>
+            {!filingProgress(editingSubmission, payments).canStart && <p className="text-sm text-amber-700">Filing can begin once the questionnaire is submitted and payment is confirmed.</p>}
+          </aside>
+        </div>
+        <div className="mt-5 flex justify-end gap-3 border-t border-[var(--color-border)] pt-4"><button className="btn btn-secondary" disabled={saving} onClick={() => setEditingSubmission(null)}>Cancel</button><button className="btn btn-primary" disabled={saving || selectedStatus === (editingSubmission.filingStage ?? 'Not started')} onClick={saveStatus}>{saving ? 'Saving...' : 'Save progress'}</button></div>
+      </>}
     </Modal>
     <Modal open={Boolean(deletingSubmission)} title="Delete submission?" onClose={() => !deleting && setDeletingSubmission(null)}>
       <p className="mt-3 text-sm leading-6 text-(--color-muted)">This removes {deletingSubmission?.id} from active work while preserving its payments and documents for audit history.</p>

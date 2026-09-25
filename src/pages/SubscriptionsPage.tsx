@@ -61,7 +61,7 @@ export function SubscriptionsPage() {
             return <tr key={record.id} className="border-t border-[var(--color-border)] hover:bg-slate-50">
               <td data-label="User" className="px-4 py-4"><Link className="font-semibold text-[var(--color-brand)] hover:underline" to={`/clients/${record.clientId}`}>{client?.name ?? 'Unknown user'}</Link><p className="mt-1 text-xs text-[var(--color-muted)]">{client?.email}</p></td>
               <td data-label="Plan" className="px-4 py-4 font-medium">{planName(record.planId)}</td><td data-label="Filing year" className="px-4 py-4">{record.year}</td><td data-label="Filing for" className="px-4 py-4">{peopleLabels[record.people]}</td><td data-label="Amount" className="px-4 py-4 font-semibold">{formatMoney(subscriptionAmount(record, plans))}</td>
-              <td data-label="Submission status" className="px-4 py-4"><Badge>{progress.submissionStatus}</Badge>{progress.submission && <div className="mt-2 text-xs"><Link className="text-[var(--color-brand)] hover:underline" to={`/submissions/${progress.submission.id}`}>View submission</Link><p className="mt-1 text-[var(--color-muted)]">{progress.submission.progress}% complete</p></div>}</td>
+              <td data-label="Submission status" className="px-4 py-4"><Badge>{progress.submissionStatus}</Badge></td>
               <td data-label="Payment status" className="px-4 py-4"><Badge>{progress.paymentStatus}</Badge></td>
               <td data-label="Actions" className="px-4 py-4"><div className="flex gap-1"><button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" title="View subscription" aria-label={`View ${record.id}`} onClick={() => setViewing(record)}><Eye size={18} /></button></div></td>
             </tr>
