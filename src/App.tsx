@@ -12,6 +12,7 @@ const SubmissionsPage = lazy(() => import('./pages/SubmissionsPage').then((modul
 const SubmissionDetailPage = lazy(() => import('./pages/SubmissionDetailPage').then((module) => ({ default: module.SubmissionDetailPage })))
 const PaymentsPage = lazy(() => import('./pages/PaymentsPage').then((module) => ({ default: module.PaymentsPage })))
 const DocumentsPage = lazy(() => import('./pages/DocumentsPage').then((module) => ({ default: module.DocumentsPage })))
+const SubscriptionsPage = lazy(() => import('./pages/SubscriptionsPage').then((module) => ({ default: module.SubscriptionsPage })))
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="submissions/:submissionId" element={<SubmissionDetailPage />} />
           <Route path="payments" element={<PaymentsPage />} />
           <Route path="documents" element={<DocumentsPage />} />
+          <Route path="subscriptions" element={<SubscriptionsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

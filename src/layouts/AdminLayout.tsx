@@ -1,4 +1,4 @@
-import { CreditCard, FileText, LayoutDashboard, LogOut, Menu, Send, Users, X } from 'lucide-react'
+import { CreditCard, FileText, LayoutDashboard, LogOut, Menu, Send, Tags, Users, X } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthContext'
@@ -7,6 +7,7 @@ const navigation = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/clients', label: 'Clients', icon: Users },
   { to: '/submissions', label: 'Submissions', icon: Send },
+  { to: '/subscriptions', label: 'Subscriptions', icon: Tags },
   { to: '/payments', label: 'Payments', icon: CreditCard },
   { to: '/documents', label: 'Documents', icon: FileText },
 ]
