@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react'
 
 const tones: Record<string, string> = {
+  Submitted: 'bg-blue-50 text-blue-700 ring-blue-600/20',
+  Draft: 'bg-slate-100 text-slate-700 ring-slate-500/20',
+  'Payment pending': 'bg-amber-50 text-amber-700 ring-amber-600/20',
   Paid: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
   Active: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
   Available: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',

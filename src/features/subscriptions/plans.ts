@@ -4,7 +4,7 @@ export interface FilingPlan {
   id: FilingType
   name: string
   status: 'Active' | 'Inactive'
-  person: 'Single' | 'partner' | '-'
+  person: 'Single' | 'With partner' | '-'
   charges: 'Filing' | 'All docs'
   description: string
   price: number
@@ -16,7 +16,7 @@ export interface FilingSelection { year: number; people: FilingPeople; planId?: 
 export const filingYears = [2026, 2025, 2024, 2023, 2022]
 export const initialPlans: FilingPlan[] = [
   { id: 'regular', name: 'Regular filing', status: 'Active', charges: 'Filing', person: 'Single', description: 'If you are registered at a Dutch address for a full year, from 1 January to 31 December.', price: 40, partnerPrice: 50 },
-  { id: 'regular-partner', name: 'Regular filing', status: 'Active', charges: 'Filing', person: 'partner', description: 'If you are registered at a Dutch address for a full year, from 1 January to 31 December.', price: 50, partnerPrice: 50 },
+  { id: 'regular-partner', name: 'Regular filing', status: 'Active', charges: 'Filing', person: 'With partner', description: 'If you are registered at a Dutch address for a full year, from 1 January to 31 December.', price: 50, partnerPrice: 50 },
   { id: 'c-form', name: 'C Form online filing', status: 'Active', charges: 'Filing', person: '-', description: 'C-FORM is for people who are not registered at a Dutch address during the filing year.', price: 45 },
   { id: 'm-form', name: 'M Form online filing', status: 'Active', charges: 'Filing', person: '-', description: 'M-FORM is for people who are registered at a Dutch address part of the year in the Netherlands.', price: 45 },
   { id: 'company', name: 'Own Company', status: 'Active', charges: 'Filing', person: '-', description: 'Sole company or ZZP freelancer.', price: 100 },
@@ -32,7 +32,7 @@ let savedPlans = structuredClone(initialPlans)
 type PlanInput = Omit<FilingPlan, 'id' | 'deletedAt'>
 function validatePlan(plan: PlanInput, excludeId?: string) {
   if (plan.charges !== 'Filing' && plan.charges !== 'All docs') throw new Error('Choose Filing or All docs charges.')
-  if (plan.person !== 'Single' && plan.person !== 'partner' && plan.person !== '-') throw new Error('Choose Single or partner.')
+  if (plan.person !== 'Single' && plan.person !== 'With partner' && plan.person !== '-') throw new Error('Choose Single, With partner or -.')
   if (plan.status !== 'Active' && plan.status !== 'Inactive') throw new Error('Choose Active or Inactive status.')
   if (!plan.name.trim() || !plan.description.trim()) throw new Error('Enter a plan name and description.')
   if (savedPlans.some((item) => !item.deletedAt && item.id !== excludeId && item.person === plan.person && item.name.toLowerCase() === plan.name.trim().toLowerCase())) throw new Error('A plan with this name and person option already exists.')
