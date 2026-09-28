@@ -1,5 +1,5 @@
-import { ArrowDownUp, Eye, Pencil, Trash2 } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { ArrowDownUp, ChevronDown, Eye, Pencil, Trash2 } from 'lucide-react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
@@ -23,6 +23,8 @@ export function ClientsPage() {
   const [page, setPage] = useState(1)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [selectedStatus, setSelectedStatus] = useState<ClientStatus>('Active')
+  const [statusOptionsOpen, setStatusOptionsOpen] = useState(false)
+  const statusTrigger = useRef<HTMLButtonElement>(null)
   const [saving, setSaving] = useState(false)
   const [deletingClient, setDeletingClient] = useState<Client | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -35,6 +37,7 @@ export function ClientsPage() {
   const rows = filtered.slice((page - 1) * perPage, page * perPage)
 
   const openStatusEditor = (client: Client) => {
+    setStatusOptionsOpen(false)
     setEditingClient(client)
     setSelectedStatus(client.status)
   }
@@ -108,14 +111,34 @@ export function ClientsPage() {
       <Pagination page={Math.min(page, Math.max(pages, 1))} totalPages={pages} onChange={setPage} />
     </section>
     <Modal open={Boolean(editingClient)} title="Edit client status" onClose={() => !saving && setEditingClient(null)}>
+      <div className="max-h-[70vh] overflow-y-auto px-1 pb-1">
       <p className="mt-3 text-sm text-[var(--color-muted)]">Update the status for {editingClient?.name}.</p>
       <label className="mt-5 block text-sm font-semibold" htmlFor="client-status">Status</label>
-      <select id="client-status" className="field mt-2 w-full" value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value as ClientStatus)} disabled={saving}>
-        {clientStatuses.map((clientStatus) => <option key={clientStatus}>{clientStatus}</option>)}
-      </select>
+      <div className="mt-2" onKeyDown={(event) => {
+        if (event.key === 'Escape' && statusOptionsOpen) {
+          event.stopPropagation()
+          setStatusOptionsOpen(false)
+          statusTrigger.current?.focus()
+        }
+      }}>
+        <button ref={statusTrigger} id="client-status" type="button" className="field flex items-center justify-between gap-3 text-left" disabled={saving} aria-expanded={statusOptionsOpen} aria-controls="client-status-options" onClick={() => setStatusOptionsOpen((open) => !open)}>
+          <span>{selectedStatus}</span><ChevronDown size={16} className={`shrink-0 transition-transform ${statusOptionsOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+        </button>
+        {statusOptionsOpen && <fieldset id="client-status-options" className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-md border border-[var(--color-border)] bg-white p-2" disabled={saving}>
+          <legend className="sr-only">Choose client status</legend>
+          {clientStatuses.map((clientStatus) => <label key={clientStatus} className={`flex cursor-pointer items-center gap-3 rounded px-3 py-2 text-sm ${selectedStatus === clientStatus ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand)]' : 'hover:bg-slate-50'}`}>
+            <input type="radio" name="client-status-option" className="size-4 accent-[var(--color-brand)]" checked={selectedStatus === clientStatus} onChange={() => {
+              setSelectedStatus(clientStatus)
+              setStatusOptionsOpen(false)
+              statusTrigger.current?.focus()
+            }} />{clientStatus}
+          </label>)}
+        </fieldset>}
+      </div>
       <div className="mt-6 flex justify-end gap-3">
         <button className="btn btn-secondary" disabled={saving} onClick={() => setEditingClient(null)}>Cancel</button>
         <button className="btn btn-primary" disabled={saving || selectedStatus === editingClient?.status} onClick={saveStatus}>{saving ? 'Saving…' : 'Save status'}</button>
+      </div>
       </div>
     </Modal>
     <Modal open={Boolean(deletingClient)} title="Delete client?" onClose={() => !deleting && setDeletingClient(null)}>

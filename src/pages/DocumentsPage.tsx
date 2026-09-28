@@ -1,4 +1,4 @@
-import { Check, Download, Eye, FileSpreadsheet, FileText, X } from 'lucide-react'
+import { Download, Eye, FileSpreadsheet, FileText } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Badge } from '../components/ui/Badge'
@@ -15,23 +15,10 @@ export function DocumentsPage() {
   const { data, loading, error, retry } = useAsync(useCallback(() => adminService.getDocuments(), []))
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
-  const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [previewingDocument, setPreviewingDocument] = useState<ClientDocument | null>(null)
   const rows = useMemo(() => (data ?? []).filter((item) => (status === 'All' || item.status === status) && `${item.name} ${item.owner} ${item.type} ${item.submissionId}`.toLowerCase().includes(search.toLowerCase())), [data, search, status])
 
   const placeholder = (action: string) => toast(`${action} will be available after secure storage integration.`)
-  const reviewDocument = async (document: ClientDocument, decision: 'Approved' | 'Rejected') => {
-    setReviewingId(document.id)
-    try {
-      await adminService.reviewDocument(document.id, decision)
-      await retry()
-      toast.success(`Document ${decision.toLowerCase()}.`)
-    } catch (reviewError) {
-      toast.error(reviewError instanceof Error ? reviewError.message : 'Unable to review document.')
-    } finally {
-      setReviewingId(null)
-    }
-  }
 
   if (loading) return <LoadingState label="Loading documents…" />
   if (error) return <ErrorState retry={retry} />
@@ -41,7 +28,7 @@ export function DocumentsPage() {
     {rows.length ? <table className="desktop-table w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-[var(--color-muted)]"><tr><th className="px-4 py-3">Document</th><th className="px-4 py-3">Owner</th><th className="px-4 py-3">Submission</th><th className="px-4 py-3">Uploaded</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead><tbody>{rows.map((item) => <tr className="border-t border-[var(--color-border)] hover:bg-slate-50" key={item.id}>
       <td data-label="Document" className="px-4 py-3"><div className="flex items-center gap-3">{item.type === 'XLSX' ? <FileSpreadsheet className="text-emerald-700" size={20} /> : <FileText className="text-rose-600" size={20} />}<div><div className="font-semibold">{item.name}</div><div className="mt-1 text-xs text-[var(--color-muted)]">{item.type} · {item.size}</div></div></div></td>
       <td data-label="Owner" className="px-4 py-3">{item.owner}</td><td data-label="Submission" className="px-4 py-3">{item.submissionId}</td><td data-label="Uploaded" className="px-4 py-3 text-[var(--color-muted)]">{formatDate(item.uploadedAt)}</td><td data-label="Status" className="px-4 py-3"><Badge>{item.status}</Badge></td>
-      <td data-label="Actions" className="px-4 py-3 text-right"><div className="flex min-w-max justify-end gap-1"><button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" onClick={() => setPreviewingDocument(item)} aria-label={`View ${item.name}`} title="View document"><Eye size={18} /></button><button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" onClick={() => placeholder('Document download')} aria-label={`Download ${item.name}`} title="Download document"><Download size={18} /></button>{item.status === 'Pending review' && <><button disabled={reviewingId === item.id} className="rounded-md p-2 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50" onClick={() => reviewDocument(item, 'Approved')} aria-label={`Approve ${item.name}`} title="Approve document"><Check size={18} /></button><button disabled={reviewingId === item.id} className="rounded-md p-2 text-red-600 hover:bg-red-50 disabled:opacity-50" onClick={() => reviewDocument(item, 'Rejected')} aria-label={`Reject ${item.name}`} title="Reject document"><X size={18} /></button></>}</div></td>
+      <td data-label="Actions" className="px-4 py-3 text-right"><div className="flex min-w-max justify-end gap-1"><button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" onClick={() => setPreviewingDocument(item)} aria-label={`View ${item.name}`} title="View document"><Eye size={18} /></button><button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" onClick={() => placeholder('Document download')} aria-label={`Download ${item.name}`} title="Download document"><Download size={18} /></button></div></td>
     </tr>)}</tbody></table> : <EmptyState title="No documents" message="Uploaded client documents will appear here." />}
   </section>
   <Modal open={Boolean(previewingDocument)} title="Document preview" onClose={() => setPreviewingDocument(null)}>
