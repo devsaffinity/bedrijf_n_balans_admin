@@ -58,7 +58,6 @@ export function PlansPage() {
           <td data-label="Actions" className="px-5 py-4"><div className="flex gap-1"><button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" title="View plan" aria-label={`View ${plan.name}`} onClick={() => setViewing(plan)}><Eye size={18} /></button><button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" title="Edit plan" aria-label={`Edit ${plan.name}`} onClick={() => edit(plan)}><Pencil size={18} /></button><button className="rounded-md p-2 text-red-600 hover:bg-red-50" title="Delete plan" aria-label={`Delete ${plan.name}`} onClick={() => setDeleting(plan)}><Trash2 size={18} /></button></div></td>
         </tr>)}</tbody>
       </table></div> : <EmptyState title="No plans found" message={search ? 'Try a different search.' : 'Create a plan to get started.'} />}
-      <p className="border-t border-[var(--color-border)] px-5 py-3 text-sm text-[var(--color-muted)]">{rows.length} {rows.length === 1 ? 'plan' : 'plans'}</p>
     </section>
 
     <Modal open={Boolean(draft)} title={draft?.id ? 'Update plan' : 'Create plan'} size="wide" onClose={() => setDraft(null)}>{draft && <form className="mt-5 space-y-6 pr-1" onSubmit={(event) => { event.preventDefault(); save() }}>
