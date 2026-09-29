@@ -1,13 +1,69 @@
 import type { Client, ClientDocument, Payment, Submission } from '../types/domain'
 
 export const clients: Client[] = [
-  { id: 'c-101', nationality: 'Dutch', city: 'Amsterdam', maritalStatus: 'Single', registrationDate: '2018-03-12', originCountry: 'Belgium', emigratedFromNetherlands: false, name: 'Sophie de Vries', email: 'sophie.devries@example.nl', phone: '+31 6 1234 5678', status: 'Active', filingType: 'Income tax', joinedAt: '2026-05-12' },
-  { id: 'c-102', nationality: 'Dutch', city: 'Utrecht', maritalStatus: 'Married', dateOfMarriage: '2019-06-15', registrationDate: '2017-09-01', originCountry: 'Germany', emigratedFromNetherlands: false, name: 'Noah Jansen', email: 'noah.jansen@example.nl', phone: '+31 6 2345 6789', status: 'Review needed', filingType: 'Income tax + business', joinedAt: '2026-05-18' },
-  { id: 'c-103', name: 'Emma Smit', email: 'emma.smit@example.nl', phone: '+31 6 3456 7890', status: 'Awaiting submission', filingType: 'Income tax', joinedAt: '2026-06-02' },
-  { id: 'c-104', nationality: 'Dutch', city: 'Antwerp', maritalStatus: 'Divorced', dateOfMarriage: '2012-05-20', registrationDate: '2010-02-08', originCountry: 'United Kingdom', emigratedFromNetherlands: true, emigrationDate: '2025-08-31', destinationCountry: 'Belgium', name: 'Liam Visser', email: 'liam.visser@example.nl', phone: '+31 6 4567 8901', status: 'Active', filingType: 'Business filing', joinedAt: '2026-06-11' },
-  { id: 'c-105', nationality: 'Dutch', city: 'Rotterdam', maritalStatus: 'Living together', registrationDate: '2020-01-15', originCountry: 'France', emigratedFromNetherlands: false, name: 'Mila Bakker', email: 'mila.bakker@example.nl', phone: '+31 6 5678 9012', status: 'Review needed', filingType: 'Income tax', joinedAt: '2026-06-24' },
-  { id: 'c-106', nationality: 'Dutch', city: 'The Hague', maritalStatus: 'Married', dateOfMarriage: '2021-04-23', registrationDate: '2016-11-10', originCountry: 'Belgium', emigratedFromNetherlands: false, name: 'Daan Meijer', email: 'daan.meijer@example.nl', phone: '+31 6 6789 0123', status: 'Active', filingType: 'Income tax + business', joinedAt: '2026-07-03' },
-  { id: 'c-107', name: 'Julia Mulder', email: 'julia.mulder@example.nl', phone: '+31 6 7890 1234', status: 'Awaiting submission', filingType: 'Income tax', joinedAt: '2026-07-09' },
+  {
+    id: 'c-101', name: 'Sophie de Vries', email: 'sophie.devries@example.nl', phone: '+31 6 1234 5678',
+    dateOfBirth: '1992-08-14', nationality: 'Dutch', city: 'Amsterdam', bsn: '123456789', fiveDigitCode: '48291',
+    maritalStatus: 'Single',
+    hasThirtyPercentRuling: false,
+    registrationDate: '2018-03-12', originCountry: 'Belgium', emigratedFromNetherlands: false,
+    status: 'Active', filingType: 'Income tax', joinedAt: '2026-05-12',
+  },
+  {
+    id: 'c-102', name: 'Noah Jansen', email: 'noah.jansen@example.nl', phone: '+31 6 2345 6789',
+    dateOfBirth: '1988-11-03', nationality: 'Dutch', city: 'Utrecht', bsn: '987654321', fiveDigitCode: '73156',
+    maritalStatus: 'Married', dateOfMarriage: '2019-06-15',
+    hasThirtyPercentRuling: true, thirtyPercentRulingStart: '2020-01-01', thirtyPercentRulingEnd: '2025-12-31',
+    registrationDate: '2017-09-01', originCountry: 'Germany', emigratedFromNetherlands: false,
+    partner: {
+      name: 'Lisa Jansen', email: 'lisa.jansen@example.nl', phone: '+31 6 2345 9999',
+      dateOfBirth: '1990-04-22', nationality: 'German', city: 'Utrecht', bsn: '111222333', fiveDigitCode: '58201',
+      registrationDate: '2019-07-01', originCountry: 'Germany', emigratedFromNetherlands: false,
+    },
+    status: 'Review needed', filingType: 'Income tax + business', joinedAt: '2026-05-18',
+  },
+  {
+    id: 'c-103', name: 'Emma Smit', email: 'emma.smit@example.nl', phone: '+31 6 3456 7890',
+    status: 'Awaiting submission', filingType: 'Income tax', joinedAt: '2026-06-02',
+  },
+  {
+    id: 'c-104', name: 'Liam Visser', email: 'liam.visser@example.nl', phone: '+31 6 4567 8901',
+    dateOfBirth: '1985-02-28', nationality: 'Dutch', city: 'Antwerp', bsn: '456789012', fiveDigitCode: '30472',
+    maritalStatus: 'Divorced', dateOfMarriage: '2012-05-20',
+    hasThirtyPercentRuling: true, thirtyPercentRulingStart: '2018-04-01', thirtyPercentRulingEnd: '2023-03-31',
+    registrationDate: '2010-02-08', originCountry: 'United Kingdom', emigratedFromNetherlands: true, emigrationDate: '2025-08-31', destinationCountry: 'Belgium',
+    status: 'Active', filingType: 'Business filing', joinedAt: '2026-06-11',
+  },
+  {
+    id: 'c-105', name: 'Mila Bakker', email: 'mila.bakker@example.nl', phone: '+31 6 5678 9012',
+    dateOfBirth: '1995-07-10', nationality: 'Dutch', city: 'Rotterdam', bsn: '789012345', fiveDigitCode: '61938',
+    maritalStatus: 'Living together',
+    hasThirtyPercentRuling: false,
+    registrationDate: '2020-01-15', originCountry: 'France', emigratedFromNetherlands: false,
+    partner: {
+      name: 'Thomas Bakker', email: 'thomas.bakker@example.nl', phone: '+31 6 5678 4444',
+      dateOfBirth: '1993-12-05', nationality: 'French', city: 'Rotterdam', bsn: '222333444', fiveDigitCode: '42017',
+      registrationDate: '2020-02-01', originCountry: 'France', emigratedFromNetherlands: false,
+    },
+    status: 'Review needed', filingType: 'Income tax', joinedAt: '2026-06-24',
+  },
+  {
+    id: 'c-106', name: 'Daan Meijer', email: 'daan.meijer@example.nl', phone: '+31 6 6789 0123',
+    dateOfBirth: '1991-03-17', nationality: 'Dutch', city: 'The Hague', bsn: '345678901', fiveDigitCode: '85764',
+    maritalStatus: 'Married', dateOfMarriage: '2021-04-23',
+    hasThirtyPercentRuling: false,
+    registrationDate: '2016-11-10', originCountry: 'Belgium', emigratedFromNetherlands: false,
+    partner: {
+      name: 'Sara Meijer', email: 'sara.meijer@example.nl', phone: '+31 6 6789 8888',
+      dateOfBirth: '1994-09-30', nationality: 'Belgian', city: 'The Hague', bsn: '555666777', fiveDigitCode: '19384',
+      registrationDate: '2021-05-01', originCountry: 'Belgium', emigratedFromNetherlands: false,
+    },
+    status: 'Active', filingType: 'Income tax + business', joinedAt: '2026-07-03',
+  },
+  {
+    id: 'c-107', name: 'Julia Mulder', email: 'julia.mulder@example.nl', phone: '+31 6 7890 1234',
+    status: 'Awaiting submission', filingType: 'Income tax', joinedAt: '2026-07-09',
+  },
 ]
 
 export const submissions: Submission[] = [

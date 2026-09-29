@@ -4,20 +4,43 @@ export type PaymentStatus = 'Paid' | 'Pending' | 'Failed' | 'Refunded'
 export type DocumentStatus = 'Available' | 'Pending review' | 'Approved' | 'Rejected'
 export type FilingStage = 'Not started' | 'Filing in Progress' | 'Submitted to Tax Authority'
 
-export interface Client {
-  id: string
-  name: string
-  email: string
-  phone: string
+export interface PartnerInfo {
+  name?: string
+  email?: string
+  phone?: string
+  dateOfBirth?: string
   nationality?: string
   city?: string
-  maritalStatus?: 'Single' | 'Married' | 'Living together' | 'Divorced' | 'Widowed'
-  dateOfMarriage?: string
+  bsn?: string
+  fiveDigitCode?: string
   registrationDate?: string
   originCountry?: string
   emigratedFromNetherlands?: boolean
   emigrationDate?: string
   destinationCountry?: string
+}
+
+export interface Client {
+  id: string
+  name: string
+  email: string
+  phone: string
+  dateOfBirth?: string
+  nationality?: string
+  city?: string
+  bsn?: string
+  fiveDigitCode?: string
+  maritalStatus?: 'Single' | 'Married' | 'Living together' | 'Divorced' | 'Widowed'
+  dateOfMarriage?: string
+  hasThirtyPercentRuling?: boolean
+  thirtyPercentRulingStart?: string
+  thirtyPercentRulingEnd?: string
+  registrationDate?: string
+  originCountry?: string
+  emigratedFromNetherlands?: boolean
+  emigrationDate?: string
+  destinationCountry?: string
+  partner?: PartnerInfo
   status: ClientStatus
   filingType: string
   joinedAt: string
