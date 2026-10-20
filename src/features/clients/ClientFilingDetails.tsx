@@ -77,6 +77,14 @@ export function ClientFilingDetails({ submissions }: { submissions: Submission[]
             <dl className="text-sm"><Field label="Has children" value={yesNo(filing.children?.hasChildren)} /></dl>
             {filing.children?.hasChildren === true && <Fields items={filing.children.details} />}
           </section>
+          <section className="rounded-lg border border-[var(--color-border)] p-4" aria-label="Business details">
+            <h3 className="font-bold">Business details</h3>
+            <dl className="divide-y divide-[var(--color-border)] text-sm">
+              <Field label="Own business" value={yesNo(filing.business?.hasOwnBusiness)} />
+              {filing.business?.hasOwnBusiness === true && <Field label="Ownership" value={filing.business.ownership} />}
+            </dl>
+            {filing.business?.hasOwnBusiness === true && <Fields items={filing.business.details} />}
+          </section>
         </>}
       </div>}
     </section>

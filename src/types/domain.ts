@@ -79,6 +79,11 @@ export interface FilingDetails {
   hasPartner?: boolean
   partner?: FilingPersonDetails
   children?: { hasChildren?: boolean; details?: FilingDetailField[] }
+  business?: {
+    hasOwnBusiness?: boolean
+    ownership?: 'Me' | 'My partner' | 'Both their own business' | 'Jointly (VOF)'
+    details?: FilingDetailField[]
+  }
 }
 
 export interface Submission {
