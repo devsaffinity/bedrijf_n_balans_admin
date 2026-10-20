@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { FilingDetailField, FilingPersonDetails, FilingTravelDetails, Submission } from '../../types/domain'
 import { ClientPropertyDetails } from './ClientPropertyDetails'
+import { ClientAccountsMortgage, ClientFilingSummary } from './ClientFinancialDetails'
+import type { FilingPlan } from '../subscriptions/plans'
+import type { Subscription } from '../subscriptions/subscriptions'
 
 const yesNo = (value?: boolean) => value === undefined ? 'Not provided' : value ? 'Yes' : 'No'
 const date = (value?: string) => value ? value.split('T')[0].split('-').reverse().join('/') : 'Not provided'
@@ -52,7 +55,7 @@ function Person({ title, person }: { title: string; person?: FilingPersonDetails
   </section>
 }
 
-export function ClientFilingDetails({ submissions }: { submissions: Submission[] }) {
+export function ClientFilingDetails({ submissions, subscriptions = [], plans = [] }: { submissions: Submission[]; subscriptions?: Subscription[]; plans?: FilingPlan[] }) {
   const [selectedId, setSelectedId] = useState('')
   const selected = submissions.find((item) => item.id === selectedId) ?? submissions[0]
   const filing = selected?.filingDetails
@@ -68,6 +71,7 @@ export function ClientFilingDetails({ submissions }: { submissions: Submission[]
       </div>
       {!selected ? <p className="p-5 text-sm text-[var(--color-muted)]">No submissions yet.</p> : <div className="space-y-5 p-5">
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm"><span className="font-semibold">Filing year: {filing?.filingYear ?? selected.propertyDetails?.filingYear ?? 'Not provided'}</span><Link className="font-semibold text-[var(--color-brand)] hover:underline" to={`/submissions/${selected.id}`}>View submission</Link></div>
+        <ClientFilingSummary submission={selected} subscriptions={subscriptions} plans={plans} />
         {!filing ? <p className="text-sm text-[var(--color-muted)]">No personal, family or travel details provided for this submission.</p> : <>
           <Person title="Main person — filing details" person={filing.mainPerson} />
           <dl className="text-sm"><Field label="Partner included in this filing" value={yesNo(filing.hasPartner)} /></dl>
@@ -89,5 +93,6 @@ export function ClientFilingDetails({ submissions }: { submissions: Submission[]
       </div>}
     </section>
     <ClientPropertyDetails submissions={submissions} selectedSubmission={selected} />
+    {selected && <ClientAccountsMortgage filingYear={filing?.filingYear ?? selected.propertyDetails?.filingYear} details={filing?.accountsAndMortgage} />}
   </div>
 }

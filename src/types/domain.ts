@@ -84,6 +84,17 @@ export interface FilingDetails {
     ownership?: 'Me' | 'My partner' | 'Both their own business' | 'Jointly (VOF)'
     details?: FilingDetailField[]
   }
+  accountsAndMortgage?: {
+    accounts?: {
+      id: string
+      name: string
+      category: string
+      holder?: string
+      balanceEur?: number
+    }[]
+    hasForeignMortgage?: boolean
+    foreignMortgageAmountEur?: number
+  }
 }
 
 export interface Submission {

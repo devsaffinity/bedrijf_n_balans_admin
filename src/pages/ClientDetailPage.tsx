@@ -6,6 +6,8 @@ import { Badge } from '../components/ui/Badge'
 import { ErrorState, LoadingState } from '../components/ui/States'
 import { useAsync } from '../hooks/useAsync'
 import { ClientFilingDetails } from '../features/clients/ClientFilingDetails'
+import { planService } from '../features/subscriptions/plans'
+import { subscriptionService } from '../features/subscriptions/subscriptions'
 import { adminService } from '../services/mockService'
 import type { PartnerInfo } from '../types/domain'
 import { formatDate, formatMoney } from '../utils/format'
@@ -69,7 +71,7 @@ export function ClientDetailPage() {
   const { clientId = '' } = useParams()
   const loader = useCallback(async () => {
     const [client, relations] = await Promise.all([adminService.getClient(clientId), adminService.getClientRelations(clientId)])
-    return { client, relations }
+    return { client, relations, subscriptions: subscriptionService.getAll().filter((item) => item.clientId === clientId), plans: planService.getPlans(true) }
   }, [clientId])
   const { data, loading, error, retry } = useAsync(loader)
   if (loading) return <LoadingState />; if (error || !data) return <ErrorState retry={retry} />
@@ -190,7 +192,7 @@ export function ClientDetailPage() {
         {/* Partner information (conditional) */}
         {showPartner && <div className="card p-5"><PartnerSection partner={client.partner!} /></div>}
 
-        <ClientFilingDetails key={client.id} submissions={relations.submissions} />
+        <ClientFilingDetails key={client.id} submissions={relations.submissions} subscriptions={data.subscriptions} plans={data.plans} />
 
         {/* Submissions */}
         <section className="card overflow-hidden">
