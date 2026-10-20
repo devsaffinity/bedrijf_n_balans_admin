@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { ErrorState, LoadingState } from '../components/ui/States'
 import { useAsync } from '../hooks/useAsync'
+import { ClientPropertyDetails } from '../features/clients/ClientPropertyDetails'
 import { adminService } from '../services/mockService'
 import type { PartnerInfo } from '../types/domain'
 import { formatDate, formatMoney } from '../utils/format'
@@ -105,9 +106,9 @@ export function ClientDetailPage() {
       <Badge>{client.status}</Badge>
     </div>
 
-    <div className="grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)]">
       {/* Left column */}
-      <aside className="space-y-6">
+      <aside className="min-w-0 space-y-6">
 
         {/* Client contact */}
         <div className="card p-5">
@@ -170,24 +171,6 @@ export function ClientDetailPage() {
             {migrationDetails.map(([label, value]) => <InfoRow key={label} label={label} value={value} />)}
           </dl>
         </div>
-      </aside>
-
-      {/* Right column */}
-      <div className="space-y-6">
-
-        {/* Partner information (conditional) */}
-        {showPartner && <div className="card p-5"><PartnerSection partner={client.partner!} /></div>}
-
-        {/* Submissions */}
-        <section className="card overflow-hidden">
-          <h2 className="border-b border-[var(--color-border)] p-5 font-bold">Submissions</h2>
-          {relations.submissions.length ? <div className="divide-y divide-[var(--color-border)]">{relations.submissions.map((item) =>
-            <Link className="flex items-center justify-between gap-4 p-4 hover:bg-slate-50" to={`/submissions/${item.id}`} key={item.id}>
-              <div><div className="font-semibold">{item.id}</div><div className="mt-1 text-xs text-[var(--color-muted)]">{item.filingType} · Updated {formatDate(item.updatedAt)}</div></div>
-              <Badge>{item.status}</Badge>
-            </Link>
-          )}</div> : <p className="p-5 text-sm text-[var(--color-muted)]">No submissions yet.</p>}
-        </section>
 
         {/* Payments */}
         <section className="card overflow-hidden">
@@ -198,6 +181,26 @@ export function ClientDetailPage() {
               <Badge>{item.status}</Badge>
             </div>
           )}</div> : <p className="p-5 text-sm text-[var(--color-muted)]">No payment records.</p>}
+        </section>
+      </aside>
+
+      {/* Right column */}
+      <div className="min-w-0 space-y-6">
+
+        {/* Partner information (conditional) */}
+        {showPartner && <div className="card p-5"><PartnerSection partner={client.partner!} /></div>}
+
+        <ClientPropertyDetails key={client.id} submissions={relations.submissions} />
+
+        {/* Submissions */}
+        <section className="card overflow-hidden">
+          <h2 className="border-b border-[var(--color-border)] p-5 font-bold">Submissions</h2>
+          {relations.submissions.length ? <div className="divide-y divide-[var(--color-border)]">{relations.submissions.map((item) =>
+            <Link className="flex items-center justify-between gap-4 p-4 hover:bg-slate-50" to={`/submissions/${item.id}`} key={item.id}>
+              <div><div className="font-semibold">{item.id}</div><div className="mt-1 text-xs text-[var(--color-muted)]">{item.filingType} · Updated {formatDate(item.updatedAt)}</div></div>
+              <Badge>{item.status}</Badge>
+            </Link>
+          )}</div> : <p className="p-5 text-sm text-[var(--color-muted)]">No submissions yet.</p>}
         </section>
 
         {/* Documents */}

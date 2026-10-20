@@ -47,6 +47,17 @@ export interface Client {
   deletedAt?: string
 }
 
+export interface PropertyDetails {
+  filingYear: number
+  housing?: 'Rental' | 'Purchased with mortgage'
+  mortgageDetails?: { question: string; answer: string }[]
+  ownsMultipleHousesInNetherlands?: boolean
+  additionalHouseDetails?: { question: string; answer: string }[]
+  rentedOut?: boolean
+  rentalDetails?: { question: string; answer: string }[]
+  situation?: string
+}
+
 export interface Submission {
   id: string
   clientId: string
@@ -63,6 +74,7 @@ export interface Submission {
   taxAuthoritySubmittedAt?: string
   updatedAt: string
   deletedAt?: string
+  propertyDetails?: PropertyDetails
   answers: { section: string; items: { question: string; answer: string }[] }[]
 }
 
