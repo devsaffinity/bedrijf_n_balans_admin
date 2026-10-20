@@ -12,16 +12,16 @@ function Details({ items }: { items?: { question: string; answer: string }[] }) 
   return items?.length ? <dl className="divide-y divide-[var(--color-border)] text-sm">{items.map((item, index) => <FieldValue key={`${item.question}-${index}`} label={item.question} value={item.answer} />)}</dl> : <p className="mt-3 text-sm text-[var(--color-muted)]">No further details provided.</p>
 }
 
-export function ClientPropertyDetails({ submissions }: { submissions: Submission[] }) {
+export function ClientPropertyDetails({ submissions, selectedSubmission }: { submissions: Submission[]; selectedSubmission?: Submission }) {
   const [selectedId, setSelectedId] = useState('')
-  const selected = submissions.find((submission) => submission.id === selectedId) ?? submissions[0]
+  const selected = selectedSubmission ?? submissions.find((submission) => submission.id === selectedId) ?? submissions[0]
   const property = selected?.propertyDetails
 
   return <section className="card overflow-hidden" aria-labelledby="property-heading">
     <div className="border-b border-[var(--color-border)] p-5">
       <h2 id="property-heading" className="font-bold">House / Property Details</h2>
       <p className="mt-1 text-sm text-[var(--color-muted)]">Housing information and the client's situation for each filing.</p>
-      {submissions.length > 0 && <label className="mt-4 block text-sm font-semibold">Filing year / submission
+      {!selectedSubmission && submissions.length > 0 && <label className="mt-4 block text-sm font-semibold">Filing year / submission
         <select className="field mt-2" value={selected?.id ?? ''} onChange={(event) => setSelectedId(event.target.value)}>
           {submissions.map((submission) => <option key={submission.id} value={submission.id}>{submission.propertyDetails?.filingYear ? `${submission.propertyDetails.filingYear} · ` : ''}{submission.id}{submission.submittedAt ? '' : ' (Draft)'}</option>)}
         </select>

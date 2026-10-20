@@ -58,6 +58,29 @@ export interface PropertyDetails {
   situation?: string
 }
 
+export interface FilingDetailField {
+  label: string
+  value: string
+}
+
+export interface FilingTravelDetails {
+  usedPublicTransport?: boolean
+  followUp?: { label: string; answer?: boolean }
+  details?: FilingDetailField[]
+}
+
+export interface FilingPersonDetails extends Pick<PartnerInfo, 'name' | 'email' | 'dateOfBirth' | 'nationality' | 'city' | 'registrationDate' | 'originCountry' | 'emigratedFromNetherlands' | 'emigrationDate' | 'destinationCountry'> {
+  travel?: FilingTravelDetails
+}
+
+export interface FilingDetails {
+  filingYear: number
+  mainPerson?: FilingPersonDetails
+  hasPartner?: boolean
+  partner?: FilingPersonDetails
+  children?: { hasChildren?: boolean; details?: FilingDetailField[] }
+}
+
 export interface Submission {
   id: string
   clientId: string
@@ -75,6 +98,7 @@ export interface Submission {
   updatedAt: string
   deletedAt?: string
   propertyDetails?: PropertyDetails
+  filingDetails?: FilingDetails
   answers: { section: string; items: { question: string; answer: string }[] }[]
 }
 

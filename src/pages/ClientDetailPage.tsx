@@ -5,7 +5,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { ErrorState, LoadingState } from '../components/ui/States'
 import { useAsync } from '../hooks/useAsync'
-import { ClientPropertyDetails } from '../features/clients/ClientPropertyDetails'
+import { ClientFilingDetails } from '../features/clients/ClientFilingDetails'
 import { adminService } from '../services/mockService'
 import type { PartnerInfo } from '../types/domain'
 import { formatDate, formatMoney } from '../utils/format'
@@ -28,7 +28,7 @@ function PartnerSection({ partner }: { partner: PartnerInfo }) {
     ['Origin country', partner.originCountry || 'Not provided'],
     ['Emigrated from the Netherlands', partner.emigratedFromNetherlands === undefined ? 'Not provided' : partner.emigratedFromNetherlands ? 'Yes' : 'No'],
     ...(partner.emigratedFromNetherlands ? [
-      ['Emigration date', displayDate(partner.emigrationDate)],
+      ['Netherlands deregistration date', displayDate(partner.emigrationDate)],
       ['Destination country', partner.destinationCountry || 'Not provided'],
     ] : []),
   ]
@@ -88,7 +88,7 @@ export function ClientDetailPage() {
     ['Origin country before moving to the Netherlands', client.originCountry || 'Not provided'],
     ['Emigrated from the Netherlands', client.emigratedFromNetherlands === undefined ? 'Not provided' : client.emigratedFromNetherlands ? 'Yes' : 'No'],
     ...(client.emigratedFromNetherlands ? [
-      ['Emigration date', displayDate(client.emigrationDate)],
+      ['Netherlands deregistration date', displayDate(client.emigrationDate)],
       ['Destination country', client.destinationCountry || 'Not provided'],
     ] : []),
   ]
@@ -190,7 +190,7 @@ export function ClientDetailPage() {
         {/* Partner information (conditional) */}
         {showPartner && <div className="card p-5"><PartnerSection partner={client.partner!} /></div>}
 
-        <ClientPropertyDetails key={client.id} submissions={relations.submissions} />
+        <ClientFilingDetails key={client.id} submissions={relations.submissions} />
 
         {/* Submissions */}
         <section className="card overflow-hidden">
