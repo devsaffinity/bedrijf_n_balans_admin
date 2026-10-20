@@ -2,16 +2,14 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { FilingDetailField, FilingPersonDetails, FilingTravelDetails, Submission } from '../../types/domain'
 import { ClientPropertyDetails } from './ClientPropertyDetails'
+import { Badge } from '../../components/ui/Badge'
+import { ClientDetailTabs } from './ClientDetailTabs'
 import { ClientAccountsMortgage, ClientFilingSummary } from './ClientFinancialDetails'
+import { ClientDeductions } from './ClientDeductions'
 import type { FilingPlan } from '../subscriptions/plans'
 import type { Subscription } from '../subscriptions/subscriptions'
-
-const yesNo = (value?: boolean) => value === undefined ? 'Not provided' : value ? 'Yes' : 'No'
-const date = (value?: string) => value ? value.split('T')[0].split('-').reverse().join('/') : 'Not provided'
-
-function Field({ label, value }: { label: string; value?: string }) {
-  return <div className="grid gap-1 py-3 sm:grid-cols-2 sm:gap-6"><dt className="text-[var(--color-muted)]">{label}</dt><dd className="whitespace-pre-wrap break-words font-medium">{value?.trim() ? value : 'Not provided'}</dd></div>
-}
+import { ClientDetailField as Field } from './ClientDetailField'
+import { displayDate as date, displayYesNo as yesNo } from './detailFormat'
 
 function Fields({ items }: { items?: FilingDetailField[] }) {
   return items?.length ? <dl className="divide-y divide-[var(--color-border)] text-sm">{items.map((item, index) => <Field key={`${item.label}-${index}`} {...item} />)}</dl> : <p className="py-3 text-sm text-[var(--color-muted)]">No further details provided.</p>
@@ -21,9 +19,18 @@ function Travel({ travel }: { travel?: FilingTravelDetails }) {
   return <section className="mt-5 border-t border-[var(--color-border)] pt-4" aria-label="Travel expenses">
     <h4 className="text-sm font-bold">Travel expenses</h4>
     <dl className="text-sm"><Field label="Public transport to work" value={yesNo(travel?.usedPublicTransport)} />
-      {travel?.usedPublicTransport === true && <Field label={travel.followUp?.label || 'Travel follow-up response'} value={yesNo(travel.followUp?.answer)} />}
+      {travel?.usedPublicTransport === true && <Field label="Employer reimbursed public transport expenses" value={yesNo(travel.employerReimbursed)} />}
     </dl>
-    {travel?.usedPublicTransport === true && travel.followUp?.answer === false && <Fields items={travel.details} />}
+    {travel?.usedPublicTransport === true && travel.employerReimbursed === false && <>
+      <dl className="divide-y divide-[var(--color-border)] text-sm">
+        <Field label="Office / work location" value={travel.workLocation} />
+        <Field label="Travel period from" value={date(travel.fromDate)} />
+        <Field label="Travel period to" value={date(travel.toDate)} />
+        <Field label="One-way distance (km)" value={travel.oneWayDistanceKm === undefined ? undefined : String(travel.oneWayDistanceKm)} />
+        <Field label="Days per week by public transport" value={travel.daysPerWeek === undefined ? undefined : String(travel.daysPerWeek)} />
+      </dl>
+      {travel.details?.length ? <Fields items={travel.details} /> : null}
+    </>}
   </section>
 }
 
@@ -50,49 +57,81 @@ function Person({ title, person }: { title: string; person?: FilingPersonDetails
           </>}
         </dl>
       </section>
+      <section className="mt-5 border-t border-[var(--color-border)] pt-4" aria-label="30% ruling for selected filing year">
+        <h4 className="text-sm font-bold">30% ruling</h4>
+        <dl className="divide-y divide-[var(--color-border)] text-sm">
+          <Field label="30% ruling in selected filing year" value={yesNo(person.thirtyPercentRuling?.hasRuling)} />
+          {person.thirtyPercentRuling?.hasRuling === true && <>
+            <Field label="Ruling start date" value={date(person.thirtyPercentRuling.startDate)} />
+            <Field label="Ruling end date" value={date(person.thirtyPercentRuling.endDate)} />
+          </>}
+        </dl>
+      </section>
       <Travel travel={person.travel} />
     </>}
   </section>
 }
 
+const filingTabs = [
+  { id: 'summary', label: 'Summary' },
+  { id: 'people', label: 'People & family' },
+  { id: 'business', label: 'Business' },
+  { id: 'deductions', label: 'Deductions' },
+  { id: 'property', label: 'Property' },
+  { id: 'accounts', label: 'Accounts & mortgage' },
+]
+
 export function ClientFilingDetails({ submissions, subscriptions = [], plans = [] }: { submissions: Submission[]; subscriptions?: Subscription[]; plans?: FilingPlan[] }) {
   const [selectedId, setSelectedId] = useState('')
+  const [active, setActive] = useState('summary')
   const selected = submissions.find((item) => item.id === selectedId) ?? submissions[0]
   const filing = selected?.filingDetails
 
-  return <div className="space-y-6">
-    <section className="card overflow-hidden" aria-labelledby="filing-details-heading">
-      <div className="border-b border-[var(--color-border)] p-5">
-        <h2 id="filing-details-heading" className="font-bold">Submission details</h2>
-        <p className="mt-1 text-sm text-[var(--color-muted)]">Main person, partner and family information for the selected filing.</p>
-        {selected && <label className="mt-4 block text-sm font-semibold">Filing year / submission
+  return <section className="card min-w-0 overflow-hidden" aria-labelledby="filing-details-heading">
+      <div className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div><h2 id="filing-details-heading" className="text-lg font-bold">Filing details</h2><p className="mt-1 text-sm text-[var(--color-muted)]">Select a filing, then choose the information you need.</p></div>
+          {selected && <Badge>{selected.submittedAt ? selected.status : 'Draft'}</Badge>}
+        </div>
+        {selected && <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end"><label className="min-w-0 flex-1 text-sm font-semibold">Filing year / submission
           <select className="field mt-2" value={selected.id} onChange={(event) => setSelectedId(event.target.value)}>{submissions.map((item) => <option key={item.id} value={item.id}>{item.filingDetails?.filingYear ?? item.propertyDetails?.filingYear ?? 'Year not provided'} · {item.id}{item.submittedAt ? '' : ' (Draft)'}</option>)}</select>
-        </label>}
+        </label><Link className="btn btn-secondary shrink-0 text-sm" to={`/submissions/${selected.id}`}>View submission</Link></div>}
       </div>
-      {!selected ? <p className="p-5 text-sm text-[var(--color-muted)]">No submissions yet.</p> : <div className="space-y-5 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm"><span className="font-semibold">Filing year: {filing?.filingYear ?? selected.propertyDetails?.filingYear ?? 'Not provided'}</span><Link className="font-semibold text-[var(--color-brand)] hover:underline" to={`/submissions/${selected.id}`}>View submission</Link></div>
-        <ClientFilingSummary submission={selected} subscriptions={subscriptions} plans={plans} />
-        {!filing ? <p className="text-sm text-[var(--color-muted)]">No personal, family or travel details provided for this submission.</p> : <>
-          <Person title="Main person — filing details" person={filing.mainPerson} />
+      {!selected ? <p className="border-t border-[var(--color-border)] p-6 text-sm text-[var(--color-muted)]">No submissions yet.</p> : <>
+        <ClientDetailTabs id="filing" label="Filing sections" tabs={filingTabs} active={active} onChange={setActive} />
+        {filingTabs.map((tab) => <div key={tab.id} id={`filing-panel-${tab.id}`} role="tabpanel" aria-labelledby={`filing-tab-${tab.id}`} hidden={active !== tab.id} tabIndex={0}>
+          {active === tab.id && <div className="p-5 sm:p-6">
+        {tab.id === 'summary' && <ClientFilingSummary submission={selected} subscriptions={subscriptions} plans={plans} />}
+        {tab.id === 'people' && (!filing ? <p className="text-sm text-[var(--color-muted)]">No personal, family or travel details provided for this submission.</p> : <div className="space-y-5">
+          <div className="grid items-start gap-5 2xl:grid-cols-2"><Person title="Main person — filing details" person={filing.mainPerson} />
+          {filing.hasPartner === true && <Person title="Partner — filing details" person={filing.partner} />}</div>
           <dl className="text-sm"><Field label="Partner included in this filing" value={yesNo(filing.hasPartner)} /></dl>
-          {filing.hasPartner === true && <Person title="Partner — filing details" person={filing.partner} />}
           <section className="rounded-lg border border-[var(--color-border)] p-4" aria-label="Children">
             <h3 className="font-bold">Children</h3>
             <dl className="text-sm"><Field label="Has children" value={yesNo(filing.children?.hasChildren)} /></dl>
-            {filing.children?.hasChildren === true && <Fields items={filing.children.details} />}
+            {filing.children?.hasChildren === true && <>
+              <dl className="text-sm"><Field label="Youngest child's date of birth" value={date(filing.children.youngestDateOfBirth)} /></dl>
+              {filing.children.details?.length ? <Fields items={filing.children.details} /> : null}
+            </>}
           </section>
-          <section className="rounded-lg border border-[var(--color-border)] p-4" aria-label="Business details">
+        </div>)}
+          {tab.id === 'business' && <section aria-label="Business details">
             <h3 className="font-bold">Business details</h3>
             <dl className="divide-y divide-[var(--color-border)] text-sm">
-              <Field label="Own business" value={yesNo(filing.business?.hasOwnBusiness)} />
-              {filing.business?.hasOwnBusiness === true && <Field label="Ownership" value={filing.business.ownership} />}
+              <Field label="Own business" value={yesNo(filing?.business?.hasOwnBusiness)} />
+              {filing?.business?.hasOwnBusiness === true && <>
+                <Field label="Ownership" value={filing.business.ownership} />
+                <Field label="Description of activities" value={filing.business.activities} />
+                <Field label="Company start date" value={date(filing.business.startDate)} />
+              </>}
             </dl>
-            {filing.business?.hasOwnBusiness === true && <Fields items={filing.business.details} />}
-          </section>
-        </>}
-      </div>}
-    </section>
-    <ClientPropertyDetails submissions={submissions} selectedSubmission={selected} />
-    {selected && <ClientAccountsMortgage filingYear={filing?.filingYear ?? selected.propertyDetails?.filingYear} details={filing?.accountsAndMortgage} />}
-  </div>
+            {filing?.business?.hasOwnBusiness === true && <Fields items={filing.business.details} />}
+          </section>}
+          {tab.id === 'deductions' && <ClientDeductions deductions={filing?.deductions} filingYear={filing?.filingYear ?? selected.propertyDetails?.filingYear} />}
+          {tab.id === 'property' && <ClientPropertyDetails submissions={submissions} selectedSubmission={selected} embedded />}
+          {tab.id === 'accounts' && <ClientAccountsMortgage filingYear={filing?.filingYear ?? selected.propertyDetails?.filingYear} details={filing?.accountsAndMortgage} embedded />}
+        </div>}
+      </div>)}
+    </>}
+  </section>
 }

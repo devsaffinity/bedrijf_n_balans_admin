@@ -27,15 +27,16 @@ export function ClientFilingSummary({ submission, subscriptions, plans }: { subm
   </section>
 }
 
-export function ClientAccountsMortgage({ filingYear, details }: { filingYear?: number; details?: FilingDetails['accountsAndMortgage'] }) {
+export function ClientAccountsMortgage({ filingYear, details, embedded = false }: { filingYear?: number; details?: FilingDetails['accountsAndMortgage']; embedded?: boolean }) {
   const valuationDate = `1 January ${filingYear ?? 'of filing year'}`
-  return <section className="card overflow-hidden" aria-labelledby="accounts-mortgage-heading">
-    <div className="border-b border-[var(--color-border)] p-5"><h2 id="accounts-mortgage-heading" className="font-bold">Accounts &amp; Mortgage</h2><p className="mt-1 text-sm text-[var(--color-muted)]">Submitted accounts and foreign mortgage amounts for the selected filing.</p></div>
+  return <section className={embedded ? 'min-w-0' : 'card overflow-hidden'} aria-labelledby="accounts-mortgage-heading">
+    <div className={embedded ? 'mb-5' : 'border-b border-[var(--color-border)] p-5'}><h2 id="accounts-mortgage-heading" className="font-bold">Accounts &amp; Mortgage</h2><p className="mt-1 text-sm text-[var(--color-muted)]">Submitted accounts and foreign mortgage amounts for the selected filing.</p></div>
     {!details ? <p className="p-5 text-sm text-[var(--color-muted)]">No account or mortgage details provided for this submission.</p> : <>
       {details.accounts?.length ? <div className="overflow-x-auto"><table className="desktop-table w-full text-left text-sm" aria-label="Submitted accounts">
-        <thead className="bg-slate-50 text-xs text-[var(--color-muted)]"><tr>{['Account', 'Account type', 'Account holder', `Amount on ${valuationDate} (EUR)`].map((heading) => <th key={heading} className="px-5 py-3">{heading}</th>)}</tr></thead>
+        <thead className="bg-slate-50 text-xs text-[var(--color-muted)]"><tr>{['Account', 'Bank account / registration number', 'Account type', 'Account holder', `Amount on ${valuationDate} (EUR)`].map((heading) => <th key={heading} className="px-5 py-3">{heading}</th>)}</tr></thead>
         <tbody>{details.accounts.map((account) => <tr key={account.id} className="border-t border-[var(--color-border)]">
           <td data-label="Account" className="px-5 py-4 font-medium">{account.name || 'Not provided'}</td>
+          <td data-label="Bank account / registration number" className="break-all px-5 py-4 font-mono text-xs">{account.accountNumber || 'Not provided'}</td>
           <td data-label="Account type" className="px-5 py-4">{account.category || 'Not provided'}</td>
           <td data-label="Account holder" className="px-5 py-4">{account.holder || 'Not provided'}</td>
           <td data-label={`Amount on ${valuationDate} (EUR)`} className="px-5 py-4 font-medium">{money(account.balanceEur)}</td>

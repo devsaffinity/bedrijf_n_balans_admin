@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+docs
+mobile-changes-admin-panel-support-report.md
+client-feedback-admin-impact-report.md
+admin-panel-change-report.md

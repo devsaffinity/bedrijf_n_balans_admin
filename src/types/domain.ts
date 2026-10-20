@@ -50,10 +50,14 @@ export interface Client {
 export interface PropertyDetails {
   filingYear: number
   housing?: 'Rental' | 'Purchased with mortgage'
+  purchaseDate?: string
+  mortgageChanged?: boolean
   mortgageDetails?: { question: string; answer: string }[]
   ownsMultipleHousesInNetherlands?: boolean
   additionalHouseDetails?: { question: string; answer: string }[]
   rentedOut?: boolean
+  annualRentalIncomeEur?: number
+  rentedHouseMortgageNumbers?: string[]
   rentalDetails?: { question: string; answer: string }[]
   situation?: string
 }
@@ -65,12 +69,24 @@ export interface FilingDetailField {
 
 export interface FilingTravelDetails {
   usedPublicTransport?: boolean
-  followUp?: { label: string; answer?: boolean }
+  employerReimbursed?: boolean
+  workLocation?: string
+  fromDate?: string
+  toDate?: string
+  oneWayDistanceKm?: number
+  daysPerWeek?: number
   details?: FilingDetailField[]
 }
 
 export interface FilingPersonDetails extends Pick<PartnerInfo, 'name' | 'email' | 'dateOfBirth' | 'nationality' | 'city' | 'registrationDate' | 'originCountry' | 'emigratedFromNetherlands' | 'emigrationDate' | 'destinationCountry'> {
   travel?: FilingTravelDetails
+  thirtyPercentRuling?: { hasRuling?: boolean; startDate?: string; endDate?: string }
+}
+
+export interface FilingDeductions {
+  medical?: { hasExpenses?: boolean; unreimbursedAmountEur?: number }
+  alimony?: { paid?: boolean; exPartnerName?: string; exPartnerDateOfBirth?: string; exPartnerBsn?: string; annualAmountEur?: number }
+  donations?: { paid?: boolean; items?: { id: string; charity: string; amountEur?: number }[] }
 }
 
 export interface FilingDetails {
@@ -78,16 +94,20 @@ export interface FilingDetails {
   mainPerson?: FilingPersonDetails
   hasPartner?: boolean
   partner?: FilingPersonDetails
-  children?: { hasChildren?: boolean; details?: FilingDetailField[] }
+  children?: { hasChildren?: boolean; youngestDateOfBirth?: string; details?: FilingDetailField[] }
   business?: {
     hasOwnBusiness?: boolean
     ownership?: 'Me' | 'My partner' | 'Both their own business' | 'Jointly (VOF)'
+    activities?: string
+    startDate?: string
     details?: FilingDetailField[]
   }
+  deductions?: FilingDeductions
   accountsAndMortgage?: {
     accounts?: {
       id: string
       name: string
+      accountNumber?: string
       category: string
       holder?: string
       balanceEur?: number
