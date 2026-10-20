@@ -20,7 +20,7 @@ let subscriptions: Subscription[] = [
   { id: 'SUBS-1001', submissionId: 'SUB-2026-1042', clientId: 'c-101', planId: 'regular', year: 2025, people: 'me', amount: 40, purchasedAt: '2026-07-21', status: 'Active' },
   { id: 'SUBS-1002', submissionId: 'SUB-2026-1041', clientId: 'c-102', planId: 'company', year: 2025, people: 'me', amount: 100, purchasedAt: '2026-07-20', status: 'Completed' },
   { id: 'SUBS-1003', submissionId: 'SUB-2026-1040', clientId: 'c-103', planId: 'c-form', year: 2025, people: 'me', amount: 45, purchasedAt: null, status: 'Pending' },
-  { id: 'SUBS-1004', submissionId: 'SUB-2026-1039', clientId: 'c-104', planId: 'm-form', year: 2025, people: 'both', amount: 90, purchasedAt: '2026-07-18', status: 'Active' },
+  { id: 'SUBS-1004', submissionId: 'SUB-2026-1039', clientId: 'c-104', planId: 'm-form-partner', year: 2025, people: 'both', amount: 90, purchasedAt: '2026-07-18', status: 'Active' },
   { id: 'SUBS-1005', submissionId: 'SUB-2026-1038', clientId: 'c-105', planId: 'regular-partner', year: 2025, people: 'both', amount: 50, purchasedAt: '2026-07-16', status: 'Active' },
   { id: 'SUBS-1006', submissionId: 'SUB-2026-1037', clientId: 'c-106', planId: 'regular-partner', year: 2024, people: 'both', amount: 50, purchasedAt: '2026-07-14', status: 'Completed' },
   { id: 'SUBS-1007', clientId: 'c-101', planId: 'c-form', year: 2024, people: 'me', amount: 45, purchasedAt: '2026-07-21', status: 'Active' },
