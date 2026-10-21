@@ -1,4 +1,5 @@
 import type { FilingDeductions } from '../../types/domain'
+import { ExcelExportButton } from '../../components/ui/ExcelExportButton'
 import { ClientDetailField as Field } from './ClientDetailField'
 import { displayDate, displayEuro, displayYesNo } from './detailFormat'
 
@@ -26,7 +27,7 @@ export function ClientDeductions({ deductions, filingYear }: { deductions?: Fili
       </dl>
     </section>
     <section className="overflow-hidden rounded-lg border border-[var(--color-border)]" aria-label="Gifts and donations">
-      <div className="p-4"><h4 className="text-sm font-bold">Gifts and donations</h4><dl className="mt-2 text-sm"><Field label="Gifts or donations paid" value={displayYesNo(deductions?.donations?.paid)} /></dl></div>
+      <div className="p-4"><div className="flex items-center justify-between gap-3"><h4 className="text-sm font-bold">Gifts and donations</h4><ExcelExportButton filename={`donations-${filingYear ?? 'filing'}`} sheetName="Gifts and donations" headers={['Foundation / charity', 'Amount paid (EUR)']} rows={deductions?.donations?.paid ? (deductions.donations.items ?? []).map((donation) => [donation.charity || 'Not provided', donation.amountEur]) : []} /></div><dl className="mt-2 text-sm"><Field label="Gifts or donations paid" value={displayYesNo(deductions?.donations?.paid)} /></dl></div>
       {deductions?.donations?.paid === true && (deductions.donations.items?.length ? <div className="overflow-x-auto"><table className="desktop-table w-full text-left text-sm" aria-label="Submitted gifts and donations">
         <thead className="bg-slate-50 text-xs text-[var(--color-muted)]"><tr><th className="px-4 py-3">Foundation / charity</th><th className="px-4 py-3">Amount paid (EUR)</th></tr></thead>
         <tbody>{deductions.donations.items.map((donation) => <tr key={donation.id} className="border-t border-[var(--color-border)]"><td data-label="Foundation / charity" className="break-words px-4 py-3 font-medium">{donation.charity || 'Not provided'}</td><td data-label="Amount paid (EUR)" className="px-4 py-3">{displayEuro(donation.amountEur)}</td></tr>)}</tbody>

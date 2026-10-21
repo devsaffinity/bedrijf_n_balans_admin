@@ -3,6 +3,7 @@ import { Eye, Tags, Trophy, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Badge } from '../components/ui/Badge'
+import { ExcelExportButton } from '../components/ui/ExcelExportButton'
 import { DataToolbar } from '../components/ui/DataToolbar'
 import { Modal } from '../components/ui/Modal'
 import { Pagination } from '../components/ui/Pagination'
@@ -39,7 +40,7 @@ export function SubscriptionsPage() {
   const rows = filtered.slice((currentPage - 1) * 5, currentPage * 5)
 
   return <>
-      <PageHeader title="Subscriptions" description="Track filing plans, submission progress, and payment status." />
+      <PageHeader title="Subscriptions" description="Track filing plans, submission progress, and payment status." action={<ExcelExportButton filename="subscriptions" sheetName="Subscriptions" headers={['User', 'Email', 'Plan', 'Filing year', 'Filing for', 'Amount (EUR)', 'Submission status', 'Payment status']} rows={filtered.map((record) => [clientFor(record)?.name ?? 'Unknown user', clientFor(record)?.email, planName(record.planId), record.year, peopleLabels[record.people], subscriptionAmount(record, plans), progressFor(record).submissionStatus, progressFor(record).paymentStatus])} />} />
       <div className="mb-6 grid gap-4 md:grid-cols-3">
         <article className="card p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-sm text-[var(--color-muted)]">Total subscriptions</p><p className="mt-2 text-3xl font-bold">{stats.total}</p></div><span className="rounded-xl bg-[var(--color-brand-soft)] p-3 text-[var(--color-brand)]"><Tags size={22} /></span></div><p className="mt-3 text-xs text-[var(--color-muted)]">Across all filing years</p></article>
         <article className="card p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-sm text-[var(--color-muted)]">Subscribed users</p><p className="mt-2 text-3xl font-bold">{stats.users}</p></div><span className="rounded-xl bg-blue-50 p-3 text-blue-700"><Users size={22} /></span></div><p className="mt-3 text-xs text-[var(--color-muted)]">Unique users with a purchased plan</p></article>

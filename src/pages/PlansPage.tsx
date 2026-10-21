@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Badge } from '../components/ui/Badge'
+import { ExcelExportButton } from '../components/ui/ExcelExportButton'
 import { DataToolbar } from '../components/ui/DataToolbar'
 import { EmptyState } from '../components/ui/States'
 import { Modal } from '../components/ui/Modal'
@@ -56,7 +57,7 @@ export function PlansPage() {
   }
 
   return <>
-    <PageHeader title="Plan" description="Create and manage filing plans, descriptions, and prices." action={<button className="btn btn-primary" onClick={() => { setError(''); setDraft({ ...emptyDraft }) }}><Plus size={18} />Create plan</button>} />
+    <PageHeader title="Plan" description="Create and manage filing plans, descriptions, and prices." action={<div className="flex items-center justify-end gap-3"><ExcelExportButton filename="plans" sheetName="Plans" headers={['Plan', 'Price (EUR)', 'Time period', 'Person', 'Charges', 'Status']} rows={rows.map((plan) => [plan.name, plan.price, plan.timePeriod, plan.person, plan.charges, plan.status])} /><button className="btn btn-primary" onClick={() => { setError(''); setDraft({ ...emptyDraft }) }}><Plus size={18} />Create plan</button></div>} />
     <section className="card overflow-hidden" aria-label="Filing plans">
       <DataToolbar search={search} onSearch={setSearch} placeholder="Search plans by name or description">
         <div className="grid gap-3 sm:grid-cols-3">

@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
+import { ExcelExportButton } from '../components/ui/ExcelExportButton'
 import { DataToolbar } from '../components/ui/DataToolbar'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -77,7 +78,7 @@ export function ClientsPage() {
   if (error) return <ErrorState retry={retry} />
 
   return <>
-    <PageHeader title="Clients" description="View and manage every client connected to the platform." />
+    <PageHeader title="Clients" description="View and manage every client connected to the platform." action={<ExcelExportButton filename="clients" sheetName="Clients" headers={['Client', 'Email', 'Filing type', 'Joined', 'Status']} rows={filtered.map((client) => [client.name, client.email, client.filingType, formatDate(client.joinedAt), client.status])} />} />
     <section className="card overflow-hidden">
       <DataToolbar search={search} onSearch={(value) => { setSearch(value); setPage(1) }} placeholder="Search clients by name or email">
         <select className="field sm:!w-44 sm:shrink-0" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1) }} aria-label="Filter client status">

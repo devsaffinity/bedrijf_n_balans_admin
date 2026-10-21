@@ -1,6 +1,7 @@
 import type { FilingDetails, Submission } from '../../types/domain'
 import type { FilingPlan } from '../subscriptions/plans'
 import type { Subscription } from '../subscriptions/subscriptions'
+import { ExcelExportButton } from '../../components/ui/ExcelExportButton'
 
 const money = (value?: number) => value !== undefined && Number.isFinite(value)
   ? new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', currencyDisplay: 'code' }).format(value)
@@ -30,7 +31,7 @@ export function ClientFilingSummary({ submission, subscriptions, plans }: { subm
 export function ClientAccountsMortgage({ filingYear, details, embedded = false }: { filingYear?: number; details?: FilingDetails['accountsAndMortgage']; embedded?: boolean }) {
   const valuationDate = `1 January ${filingYear ?? 'of filing year'}`
   return <section className={embedded ? 'min-w-0' : 'card overflow-hidden'} aria-labelledby="accounts-mortgage-heading">
-    <div className={embedded ? 'mb-5' : 'border-b border-[var(--color-border)] p-5'}><h2 id="accounts-mortgage-heading" className="font-bold">Accounts &amp; Mortgage</h2><p className="mt-1 text-sm text-[var(--color-muted)]">Submitted accounts and foreign mortgage amounts for the selected filing.</p></div>
+    <div className={`flex items-start justify-between gap-3 ${embedded ? 'mb-5' : 'border-b border-[var(--color-border)] p-5'}`}><div><h2 id="accounts-mortgage-heading" className="font-bold">Accounts &amp; Mortgage</h2><p className="mt-1 text-sm text-[var(--color-muted)]">Submitted accounts and foreign mortgage amounts for the selected filing.</p></div><ExcelExportButton filename={`accounts-${filingYear ?? 'filing'}`} sheetName="Accounts" headers={['Account', 'Bank account / registration number', 'Account type', 'Account holder', `Amount on ${valuationDate} (EUR)`]} rows={(details?.accounts ?? []).map((account) => [account.name || 'Not provided', account.accountNumber || 'Not provided', account.category || 'Not provided', account.holder || 'Not provided', account.balanceEur])} /></div>
     {!details ? <p className="p-5 text-sm text-[var(--color-muted)]">No account or mortgage details provided for this submission.</p> : <>
       {details.accounts?.length ? <div className="overflow-x-auto"><table className="desktop-table w-full text-left text-sm" aria-label="Submitted accounts">
         <thead className="bg-slate-50 text-xs text-[var(--color-muted)]"><tr>{['Account', 'Bank account / registration number', 'Account type', 'Account holder', `Amount on ${valuationDate} (EUR)`].map((heading) => <th key={heading} className="px-5 py-3">{heading}</th>)}</tr></thead>

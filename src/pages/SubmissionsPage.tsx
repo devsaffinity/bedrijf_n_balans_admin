@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
+import { ExcelExportButton } from '../components/ui/ExcelExportButton'
 import { DataToolbar } from '../components/ui/DataToolbar'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -87,7 +88,7 @@ export function SubmissionsPage() {
   if (error) return <ErrorState retry={retry} />
 
   return <>
-    <PageHeader title="Submissions" description="Track filing milestones and update submission progress." />
+    <PageHeader title="Submissions" description="Track filing milestones and update submission progress." action={<ExcelExportButton filename="submissions" sheetName="Submissions" headers={['Submission', 'Filing type', 'Client', 'Email', 'Updated', 'Current stage', 'Editing access', 'Filing progress']} rows={rows.map((item) => [item.id, item.filingType, item.clientName, item.clientEmail, formatDate(item.updatedAt), filingProgress(item, payments).current, submissionEditingAccess(item), filingProgress(item, payments).milestones.filter((milestone) => milestone.completed).map((milestone) => milestone.label).join('; ')])} />} />
     <section className="card overflow-hidden">
       <DataToolbar search={search} onSearch={setSearch} placeholder="Search by client or submission ID">
         <select className="field sm:w-44! sm:shrink-0" value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter submission status">
