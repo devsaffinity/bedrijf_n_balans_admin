@@ -82,7 +82,7 @@ export function ClientDetailPage() {
         </section>
         <section className="card overflow-hidden" aria-labelledby="client-payments-heading">
           <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4"><h2 id="client-payments-heading" className="font-bold">Payments</h2><span className="text-xs text-[var(--color-muted)]">{relations.payments.length} records</span></div>
-          {relations.payments.length ? <div className="max-h-80 divide-y divide-[var(--color-border)] overflow-y-auto">{relations.payments.map((item) => <div className="space-y-2 p-4" key={item.id}><div className="flex flex-wrap items-center justify-between gap-2"><span className="font-bold">{formatMoney(item.amount)}</span><Badge>{item.status}</Badge></div><p className="break-all text-xs text-[var(--color-muted)]">{item.reference}</p><p className="text-xs text-[var(--color-muted)]">{formatDate(item.date)}</p></div>)}</div> : <p className="p-5 text-sm text-[var(--color-muted)]">No payment records.</p>}
+          {relations.payments.length ? <div className="max-h-80 divide-y divide-[var(--color-border)] overflow-y-auto">{relations.payments.map((item) => <div className="space-y-2 p-4" key={item.id}><div className="flex flex-wrap items-center justify-between gap-2"><span className="font-bold">{formatMoney(item.amount)}</span><Badge>{item.status}</Badge></div><p className="text-xs text-[var(--color-muted)]">{formatDate(item.date)}</p></div>)}</div> : <p className="p-5 text-sm text-[var(--color-muted)]">No payment records.</p>}
         </section>
       </aside>
       <div className="min-w-0 space-y-5">

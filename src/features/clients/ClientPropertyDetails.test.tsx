@@ -18,21 +18,29 @@ function show(submissions: Submission[]) {
 const details: PropertyDetails = {
   filingYear: 2025,
   housing: 'Purchased with mortgage',
+  purchaseDate: '2025-03-21',
+  mortgageChanged: true,
   mortgageDetails: [{ question: 'Mortgage information', answer: 'Mortgage answer' }],
   ownsMultipleHousesInNetherlands: true,
   additionalHouseDetails: [{ question: 'Additional property', answer: 'Property answer' }],
   rentedOut: true,
+  annualRentalIncomeEur: 14400,
+  rentedHouseMortgageNumbers: ['0012345', '0098765'],
   rentalDetails: [{ question: 'Rental information', answer: 'Rental answer' }],
   situation: 'First line\nSecond line',
 }
 
 describe('Client property review', () => {
   it('hides mortgage details for rental, and property follow-ups for No even with stale values', () => {
-    show([submission('rental', { ...details, housing: 'Rental', ownsMultipleHousesInNetherlands: false })])
+    show([submission('rental', { ...details, housing: 'Rental', ownsMultipleHousesInNetherlands: true })])
     expect(screen.queryByText('Mortgage answer')).toBeNull()
     expect(screen.queryByText('Property answer')).toBeNull()
-    expect(screen.queryByText('Property rented out')).toBeNull()
+    expect(screen.queryByText('Second house rented out (not your residence)')).toBeNull()
     expect(screen.queryByText('Rental answer')).toBeNull()
+    expect(screen.queryByText('House purchase date')).toBeNull()
+    expect(screen.queryByText('Mortgage renewed, changed or additional mortgage received')).toBeNull()
+    expect(screen.queryByText('Multiple houses in the Netherlands (2 or more)')).toBeNull()
+    expect(screen.queryByText('0012345, 0098765')).toBeNull()
     expect(screen.getByText(/First line/).textContent).toBe('First line\nSecond line')
   })
 
@@ -40,15 +48,28 @@ describe('Client property review', () => {
     show([submission('owner', { ...details, rentedOut: false })])
     expect(screen.getByText('Mortgage answer')).toBeTruthy()
     expect(screen.getByText('Property answer')).toBeTruthy()
+    expect(screen.getByText('21/03/2025')).toBeTruthy()
+    expect(screen.getByText('Mortgage renewed, changed or additional mortgage received')).toBeTruthy()
     expect(screen.queryByText('Rental answer')).toBeNull()
+    expect(screen.queryByText('Mortgage number(s) for rented-out house')).toBeNull()
   })
 
   it('shows rental follow-ups only for a confirmed Yes', () => {
     const view = show([submission('owner', details)])
     expect(screen.getByText('Rental answer')).toBeTruthy()
+    expect(screen.getByText('0012345, 0098765')).toBeTruthy()
+    expect(screen.getByText(/EUR.*14\.400,00/)).toBeTruthy()
     view.rerender(<MemoryRouter><ClientPropertyDetails submissions={[submission('owner', { ...details, rentedOut: undefined })]} /></MemoryRouter>)
     expect(screen.queryByText('Rental answer')).toBeNull()
-    expect(screen.getByText('Not provided')).toBeTruthy()
+    expect(screen.getByText('Second house rented out (not your residence)').nextElementSibling?.textContent).toBe('Not provided')
+  })
+
+  it('hides stale rented-house details when multiple houses is No even when rentedOut is Yes', () => {
+    show([submission('single-house', { ...details, ownsMultipleHousesInNetherlands: false })])
+    expect(screen.queryByText('Second house rented out (not your residence)')).toBeNull()
+    expect(screen.queryByText('Mortgage number(s) for rented-out house')).toBeNull()
+    expect(screen.queryByText('0012345, 0098765')).toBeNull()
+    expect(screen.queryByText('Total rental income for 2025 (EUR)')).toBeNull()
   })
 
   it('switches filing year, answers and submission link together without leaking the previous answers', () => {
