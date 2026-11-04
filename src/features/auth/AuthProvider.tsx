@@ -1,13 +1,14 @@
-import { useMemo, useState, type ReactNode } from 'react'
-import { authService } from '../../services/authService'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { authService, type AdminSession } from '../../services/authService'
 import { AuthContext } from './AuthContext'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState(() => authService.getSession())
+  const [session, setSession] = useState<AdminSession>({ user: null, initializing: true, error: '' })
+  useEffect(() => authService.subscribe(setSession), [])
   const value = useMemo(() => ({
-    user,
-    login: async (email: string, password: string) => setUser(await authService.login(email, password)),
-    logout: () => { authService.logout(); setUser(null) },
-  }), [user])
+    ...session,
+    login: authService.login,
+    logout: authService.logout,
+  }), [session])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

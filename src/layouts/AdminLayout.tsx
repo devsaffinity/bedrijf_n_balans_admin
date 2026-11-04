@@ -2,6 +2,7 @@ import { CreditCard, FileText, LayoutDashboard, LogOut, Menu, Send, Tags, Users,
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthContext'
+import toast from 'react-hot-toast'
 
 const navigation = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -14,14 +15,20 @@ const navigation = [
 
 export function AdminLayout() {
   const [open, setOpen] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const doLogout = () => { logout(); navigate('/login') }
+  const doLogout = async () => {
+    setSigningOut(true)
+    try { await logout(); navigate('/login', { replace: true }) }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to sign out.') }
+    finally { setSigningOut(false) }
+  }
   const sidebar = (
     <>
       <div className="flex h-18 items-center justify-between border-b border-white/15 px-5"><img className="h-7 w-auto max-w-44 object-contain object-left" src="/images/applogo.png" alt="Bedrijf in Balans" /><button className="p-1 text-white md:hidden" onClick={() => setOpen(false)} aria-label="Close navigation"><X /></button></div>
       <nav className="flex-1 space-y-1 p-3" aria-label="Main navigation">{navigation.map(({ to, label, icon: Icon, end }) => <NavLink key={to} to={to} end={end} onClick={() => setOpen(false)} className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition ${isActive ? 'bg-white text-[var(--color-brand-dark)] shadow-sm' : 'text-red-50/85 hover:bg-white/10 hover:text-white'}`}><Icon size={19} />{label}</NavLink>)}</nav>
-      <div className="border-t border-white/15 p-3"><div className="mb-2 px-3 py-2"><div className="text-sm font-semibold text-white">{user?.name}</div><div className="truncate text-xs text-red-100/70">{user?.email}</div></div><button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-red-50/85 hover:bg-white/10 hover:text-white" onClick={doLogout}><LogOut size={18} />Sign out</button></div>
+      <div className="border-t border-white/15 p-3"><div className="mb-2 px-3 py-2"><div className="text-sm font-semibold text-white">{user?.name}</div><div className="truncate text-xs text-red-100/70">{user?.email}</div></div><button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-red-50/85 hover:bg-white/10 hover:text-white" disabled={signingOut} onClick={doLogout}><LogOut size={18} />{signingOut ? 'Signing out…' : 'Sign out'}</button></div>
     </>
   )
   return (

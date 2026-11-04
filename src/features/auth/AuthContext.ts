@@ -3,8 +3,10 @@ import type { AdminUser } from '../../services/authService'
 
 export interface AuthContextValue {
   user: AdminUser | null
+  initializing: boolean
+  error: string
   login: (email: string, password: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)
