@@ -1,5 +1,5 @@
-import { clients, documents, payments, submissions } from '../mock/data'
-import type { Client, ClientDocument, ClientStatus, DocumentStatus, FilingStage, Payment, Submission, SubmissionStatus } from '../types/domain'
+import { documents, payments, submissions } from '../mock/data'
+import type { ClientDocument, DocumentStatus, FilingStage, Payment, Submission, SubmissionStatus } from '../types/domain'
 import { applyFilingStage } from '../features/submissions/progress'
 import { reopenSubmission } from '../features/submissions/editingAccess'
 
@@ -15,25 +15,6 @@ export const submissionTransitions: Record<SubmissionStatus, SubmissionStatus[]>
 
 export const adminService = {
   getAllowedSubmissionStatuses(status: SubmissionStatus) { return copy(submissionTransitions[status]) },
-  async getClients() { await wait(); return copy(clients) },
-  async getClient(id: string) { await wait(); return copy(clients.find((item) => item.id === id) ?? null) },
-  async updateClientStatus(id: string, status: ClientStatus): Promise<Client> {
-    await wait(450)
-    const client = clients.find((item) => item.id === id)
-    if (!client) throw new Error('Client not found.')
-    if (client.status === 'Deleted' || status === 'Deleted') throw new Error('Deleted status can only be applied through the delete action.')
-    client.status = status
-    return copy(client)
-  },
-  async deleteClient(id: string): Promise<Client> {
-    await wait(450)
-    const client = clients.find((item) => item.id === id)
-    if (!client) throw new Error('Client not found.')
-    if (client.status === 'Deleted') throw new Error('Client is already deleted.')
-    client.status = 'Deleted'
-    client.deletedAt = new Date().toISOString()
-    return copy(client)
-  },
   async getSubmissions() { await wait(); return copy(submissions) },
   async reopenSubmission(id: string): Promise<Submission> {
     await wait(450)
@@ -82,13 +63,5 @@ export const adminService = {
     document.status = decision
     document.reviewedAt = new Date().toISOString()
     return copy(document)
-  },
-  async getClientRelations(clientId: string) {
-    await wait()
-    return copy({
-      submissions: submissions.filter((item) => item.clientId === clientId),
-      payments: payments.filter((item) => item.clientId === clientId),
-      documents: documents.filter((item) => item.clientId === clientId),
-    })
   },
 }

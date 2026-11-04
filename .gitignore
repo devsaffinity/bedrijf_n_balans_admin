@@ -32,11 +32,6 @@ docs
 mobile-changes-admin-panel-support-report.md
 client-feedback-admin-impact-report.md
 admin-panel-change-report.md
-src/features/clients/ClientDeductions.test.tsx
-src/features/clients/ClientFilingDetails.test.tsx
-src/pages/ClientDetailPage.test.tsx
-src/pages/ClientDetailPage.test.tsx
-src/pages/ClientDetailPage.test.tsx
-src/features/clients/ClientPropertyDetails.test.tsx
-src/features/clients/ClientPropertyDetails.test.tsx
-src/features/clients/ClientFinancialDetails.test.tsx
+# Test files
+*.test.*
+*.spec.*

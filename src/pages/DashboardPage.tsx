@@ -6,11 +6,12 @@ import { Badge } from '../components/ui/Badge'
 import { ErrorState, LoadingState } from '../components/ui/States'
 import { useAsync } from '../hooks/useAsync'
 import { adminService } from '../services/mockService'
+import { clientService } from '../services/clientService'
 import { formatDate } from '../utils/format'
 
 export function DashboardPage() {
   const loader = useCallback(async () => {
-    const [clients, submissions, payments] = await Promise.all([adminService.getClients(), adminService.getSubmissions(), adminService.getPayments()])
+    const [clients, submissions, payments] = await Promise.all([clientService.getClients(), adminService.getSubmissions(), adminService.getPayments()])
     return { clients, submissions, payments }
   }, [])
   const { data, loading, error, retry } = useAsync(loader)

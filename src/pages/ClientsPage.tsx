@@ -1,153 +1,57 @@
-import { ArrowDownUp, ChevronDown, Eye, Pencil, Trash2 } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
-import toast from 'react-hot-toast'
+import { ArrowDownUp, Eye } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { ExcelExportButton } from '../components/ui/ExcelExportButton'
 import { DataToolbar } from '../components/ui/DataToolbar'
-import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Pagination } from '../components/ui/Pagination'
 import { EmptyState, ErrorState, LoadingState } from '../components/ui/States'
 import { useAsync } from '../hooks/useAsync'
-import { adminService } from '../services/mockService'
-import type { Client, ClientStatus } from '../types/domain'
+import { clientService } from '../services/clientService'
 import { formatDate } from '../utils/format'
 
-const clientStatuses: ClientStatus[] = ['Active', 'Review needed', 'Awaiting submission']
-
 export function ClientsPage() {
-  const { data, loading, error, retry } = useAsync(useCallback(() => adminService.getClients(), []))
+  const { data, loading, error, retry } = useAsync(useCallback(() => clientService.getClients(), []))
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
   const [ascending, setAscending] = useState(true)
   const [page, setPage] = useState(1)
-  const [editingClient, setEditingClient] = useState<Client | null>(null)
-  const [selectedStatus, setSelectedStatus] = useState<ClientStatus>('Active')
-  const [statusOptionsOpen, setStatusOptionsOpen] = useState(false)
-  const statusTrigger = useRef<HTMLButtonElement>(null)
-  const [saving, setSaving] = useState(false)
-  const [deletingClient, setDeletingClient] = useState<Client | null>(null)
-  const [deleting, setDeleting] = useState(false)
-
+  const statuses = [...new Set((data ?? []).map((client) => client.status ?? 'Not provided'))].sort()
   const filtered = useMemo(() => (data ?? [])
-    .filter((item) => (status === 'All' || item.status === status) && `${item.name} ${item.email}`.toLowerCase().includes(search.toLowerCase()))
+    .filter((item) => (status === 'All' || (item.status ?? 'Not provided') === status) && `${item.name} ${item.email}`.toLowerCase().includes(search.toLowerCase()))
     .sort((first, second) => ascending ? first.name.localeCompare(second.name) : second.name.localeCompare(first.name)), [data, status, search, ascending])
-  const perPage = 5
-  const pages = Math.ceil(filtered.length / perPage)
-  const rows = filtered.slice((page - 1) * perPage, page * perPage)
-
-  const openStatusEditor = (client: Client) => {
-    setStatusOptionsOpen(false)
-    setEditingClient(client)
-    setSelectedStatus(client.status)
-  }
-
-  const saveStatus = async () => {
-    if (!editingClient) return
-    setSaving(true)
-    try {
-      await adminService.updateClientStatus(editingClient.id, selectedStatus)
-      setEditingClient(null)
-      await retry()
-      toast.success('Client status updated.')
-    } catch (saveError) {
-      toast.error(saveError instanceof Error ? saveError.message : 'Unable to update client status.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const deleteClient = async () => {
-    if (!deletingClient) return
-    setDeleting(true)
-    try {
-      await adminService.deleteClient(deletingClient.id)
-      setDeletingClient(null)
-      setPage(1)
-      await retry()
-      toast.success('Client deleted. Related records were preserved for audit history.')
-    } catch (deleteError) {
-      toast.error(deleteError instanceof Error ? deleteError.message : 'Unable to delete client.')
-    } finally {
-      setDeleting(false)
-    }
-  }
+  const pages = Math.max(1, Math.ceil(filtered.length / 5))
+  const currentPage = Math.min(page, pages)
+  const rows = filtered.slice((currentPage - 1) * 5, currentPage * 5)
 
   if (loading) return <LoadingState label="Loading clients…" />
-  if (error) return <ErrorState retry={retry} />
+  if (error) return <ErrorState retry={retry} message={error} />
 
   return <>
-    <PageHeader title="Clients" description="View and manage every client connected to the platform." action={<ExcelExportButton filename="clients" sheetName="Clients" headers={['Client', 'Email', 'Filing type', 'Joined', 'Status']} rows={filtered.map((client) => [client.name, client.email, client.filingType, formatDate(client.joinedAt), client.status])} />} />
+    <PageHeader title="Clients" description="View client profiles registered on the platform." action={<ExcelExportButton filename="clients" sheetName="Clients" headers={['Client', 'Email', 'Filing type', 'Joined', 'Status']} rows={filtered.map((client) => [client.name, client.email, client.filingType || 'Not provided', formatDate(client.joinedAt), client.status ?? 'Not provided'])} />} />
     <section className="card overflow-hidden">
       <DataToolbar search={search} onSearch={(value) => { setSearch(value); setPage(1) }} placeholder="Search clients by name or email">
         <select className="field sm:!w-44 sm:shrink-0" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1) }} aria-label="Filter client status">
-          <option>All</option>
-          {clientStatuses.map((clientStatus) => <option key={clientStatus}>{clientStatus}</option>)}
-          <option>Deleted</option>
+          <option value="All">All statuses</option>
+          {statuses.map((value) => <option key={value}>{value}</option>)}
         </select>
       </DataToolbar>
       {rows.length ? <div className="overflow-x-auto"><table className="desktop-table w-full border-collapse text-left text-sm md:min-w-[950px]">
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-[var(--color-muted)]"><tr>
-          <th className="px-4 py-3 xl:w-[18%] xl:px-6"><button className="flex items-center gap-1 font-semibold" onClick={() => setAscending((value) => !value)}>Client <ArrowDownUp size={13} /></button></th>
-          <th className="px-4 py-3 xl:w-[24%] xl:px-6">Email</th>
-          <th className="px-4 py-3 xl:w-[18%] xl:px-6">Filing type</th>
-          <th className="px-4 py-3 xl:w-[14%] xl:px-6">Joined</th>
-          <th className="px-4 py-3 xl:w-[16%] xl:px-6">Status</th>
-          <th className="px-4 py-3 xl:w-[10%] xl:px-6">Actions</th>
+          <th className="px-4 py-3 xl:px-6"><button className="flex items-center gap-1 font-semibold" onClick={() => { setAscending((value) => !value); setPage(1) }}>Client <ArrowDownUp size={13} /></button></th>
+          <th className="px-4 py-3 xl:px-6">Email</th><th className="px-4 py-3 xl:px-6">Filing type</th><th className="px-4 py-3 xl:px-6">Joined</th><th className="px-4 py-3 xl:px-6">Status</th><th className="px-4 py-3 xl:px-6">Actions</th>
         </tr></thead>
         <tbody>{rows.map((client) => <tr className="border-t border-[var(--color-border)] hover:bg-slate-50" key={client.id}>
           <td data-label="Client" className="px-4 py-3 font-semibold xl:px-6 xl:py-4">{client.name}</td>
-          <td data-label="Email" className="px-4 py-3 text-[var(--color-muted)] xl:px-6 xl:py-4">{client.email}</td>
-          <td data-label="Filing type" className="px-4 py-3 xl:px-6 xl:py-4">{client.filingType}</td>
+          <td data-label="Email" className="px-4 py-3 text-[var(--color-muted)] xl:px-6 xl:py-4">{client.email || 'Not provided'}</td>
+          <td data-label="Filing type" className="px-4 py-3 xl:px-6 xl:py-4">{client.filingType || 'Not provided'}</td>
           <td data-label="Joined" className="px-4 py-3 text-[var(--color-muted)] xl:px-6 xl:py-4">{formatDate(client.joinedAt)}</td>
-          <td data-label="Status" className="px-4 py-3 xl:px-6 xl:py-4"><Badge>{client.status}</Badge></td>
-          <td data-label="Actions" className="px-4 py-3 xl:px-6 xl:py-4"><div className="flex min-w-max gap-1">
-            <Link className="rounded-md p-2 text-slate-600 hover:bg-slate-100" to={`/clients/${client.id}`} aria-label={`View ${client.name} details`} title="View details"><Eye size={18} /></Link>
-            <button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" onClick={() => openStatusEditor(client)} aria-label={`Edit ${client.name} status`} title="Edit status"><Pencil size={18} /></button>
-            {client.status !== 'Deleted' && <button className="rounded-md p-2 text-red-600 hover:bg-red-50" onClick={() => setDeletingClient(client)} aria-label={`Delete ${client.name}`} title="Delete client"><Trash2 size={18} /></button>}
-          </div></td>
+          <td data-label="Status" className="px-4 py-3 xl:px-6 xl:py-4"><Badge>{client.status ?? 'Not provided'}</Badge></td>
+          <td data-label="Actions" className="px-4 py-3 xl:px-6 xl:py-4"><Link className="inline-flex rounded-md p-2 text-slate-600 hover:bg-slate-100" to={`/clients/${encodeURIComponent(client.id)}`} aria-label={`View ${client.name} details`} title="View details"><Eye size={18} /></Link></td>
         </tr>)}</tbody>
-      </table></div> : <EmptyState />}
-      <Pagination page={Math.min(page, Math.max(pages, 1))} totalPages={pages} onChange={setPage} />
+      </table></div> : <EmptyState title={data?.length ? 'No matching clients' : 'No clients yet'} message={data?.length ? 'Try another search or status filter.' : 'Registered clients will appear here.'} />}
+      <Pagination page={currentPage} totalPages={pages} onChange={setPage} />
     </section>
-    <Modal open={Boolean(editingClient)} title="Edit client status" onClose={() => !saving && setEditingClient(null)}>
-      <div className="max-h-[70vh] overflow-y-auto px-1 pb-1">
-      <p className="mt-3 text-sm text-[var(--color-muted)]">Update the status for {editingClient?.name}.</p>
-      <label className="mt-5 block text-sm font-semibold" htmlFor="client-status">Status</label>
-      <div className="mt-2" onKeyDown={(event) => {
-        if (event.key === 'Escape' && statusOptionsOpen) {
-          event.stopPropagation()
-          setStatusOptionsOpen(false)
-          statusTrigger.current?.focus()
-        }
-      }}>
-        <button ref={statusTrigger} id="client-status" type="button" className="field flex items-center justify-between gap-3 text-left" disabled={saving} aria-expanded={statusOptionsOpen} aria-controls="client-status-options" onClick={() => setStatusOptionsOpen((open) => !open)}>
-          <span>{selectedStatus}</span><ChevronDown size={16} className={`shrink-0 transition-transform ${statusOptionsOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-        </button>
-        {statusOptionsOpen && <fieldset id="client-status-options" className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-md border border-[var(--color-border)] bg-white p-2" disabled={saving}>
-          <legend className="sr-only">Choose client status</legend>
-          {clientStatuses.map((clientStatus) => <label key={clientStatus} className={`flex cursor-pointer items-center gap-3 rounded px-3 py-2 text-sm ${selectedStatus === clientStatus ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand)]' : 'hover:bg-slate-50'}`}>
-            <input type="radio" name="client-status-option" className="size-4 accent-[var(--color-brand)]" checked={selectedStatus === clientStatus} onChange={() => {
-              setSelectedStatus(clientStatus)
-              setStatusOptionsOpen(false)
-              statusTrigger.current?.focus()
-            }} />{clientStatus}
-          </label>)}
-        </fieldset>}
-      </div>
-      <div className="mt-6 flex justify-end gap-3">
-        <button className="btn btn-secondary" disabled={saving} onClick={() => setEditingClient(null)}>Cancel</button>
-        <button className="btn btn-primary" disabled={saving || selectedStatus === editingClient?.status} onClick={saveStatus}>{saving ? 'Saving…' : 'Save status'}</button>
-      </div>
-      </div>
-    </Modal>
-    <Modal open={Boolean(deletingClient)} title="Delete client?" onClose={() => !deleting && setDeletingClient(null)}>
-      <p className="mt-3 text-sm leading-6 text-[var(--color-muted)]">This removes {deletingClient?.name} from active work while preserving submissions, payments, and documents for audit history.</p>
-      <div className="mt-6 flex justify-end gap-3">
-        <button className="btn btn-secondary" disabled={deleting} onClick={() => setDeletingClient(null)}>Cancel</button>
-        <button className="btn bg-red-600 text-white hover:bg-red-700" disabled={deleting} onClick={deleteClient}>{deleting ? 'Deleting…' : 'Delete client'}</button>
-      </div>
-    </Modal>
   </>
 }
