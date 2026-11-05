@@ -1,6 +1,7 @@
 import { filingProgress } from '../submissions/progress'
 import type { Payment, Submission } from '../../types/domain'
 import type { FilingPeople, FilingPlan, FilingType } from './plans'
+import { findPlan } from './plans'
 
 export type SubscriptionStatus = 'Active' | 'Pending' | 'Completed' | 'Cancelled'
 export interface Subscription {
@@ -39,7 +40,7 @@ export const statusTransitions: Record<SubscriptionStatus, SubscriptionStatus[]>
 
 // Show the linked plan price; retain the recorded amount as a fallback for missing plans.
 export function subscriptionAmount(record: Subscription, plans: FilingPlan[]): number {
-  return plans.find((plan) => plan.id === record.planId)?.price ?? record.amount
+  return findPlan(plans, record.planId)?.price ?? record.amount
 }
 
 export function subscriptionProgress(record: Subscription, submissions: Submission[], payments: Payment[]) {

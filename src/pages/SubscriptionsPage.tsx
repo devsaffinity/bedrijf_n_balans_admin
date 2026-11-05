@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Eye, Tags, Trophy, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -7,9 +7,10 @@ import { ExcelExportButton } from '../components/ui/ExcelExportButton'
 import { DataToolbar } from '../components/ui/DataToolbar'
 import { Modal } from '../components/ui/Modal'
 import { Pagination } from '../components/ui/Pagination'
-import { EmptyState } from '../components/ui/States'
+import { EmptyState, ErrorState, LoadingState } from '../components/ui/States'
+import { useAsync } from '../hooks/useAsync'
 import { clients, submissions, payments } from '../mock/data'
-import { filingYears, planService } from '../features/subscriptions/plans'
+import { filingYears, findPlan, planService } from '../features/subscriptions/plans'
 import { subscriptionService, subscriptionStats, subscriptionAmount, subscriptionProgress } from '../features/subscriptions/subscriptions'
 import type { Subscription } from '../features/subscriptions/subscriptions'
 import { formatDate, formatMoney } from '../utils/format'
@@ -24,20 +25,24 @@ export function SubscriptionsPage() {
   const [year, setYear] = useState('All')
   const [page, setPage] = useState(1)
   const [viewing, setViewing] = useState<Subscription | null>(null)
-  const plans = planService.getPlans(true)
+  const { data: planData, loading, error, retry } = useAsync(useCallback(() => planService.getPlans(true), []))
+  const plans = planData ?? []
   const stats = subscriptionStats(records)
-  const planName = (id: string) => plans.find((plan) => plan.id === id)?.name ?? id
+  const planName = (id: string) => findPlan(plans, id)?.name ?? id
   const clientFor = (record: Subscription) => clients.find((client) => client.id === record.clientId)
   const progressFor = (record: Subscription) => subscriptionProgress(record, submissions, payments)
   const viewingProgress = viewing ? progressFor(viewing) : null
   const filtered = records.filter((record) => {
     const client = clientFor(record)
-    return (status === 'All' || progressFor(record).submissionStatus === status) && (planFilter === 'All' || record.planId === planFilter) && (year === 'All' || String(record.year) === year)
+    return (status === 'All' || progressFor(record).submissionStatus === status) && (planFilter === 'All' || findPlan(plans, record.planId)?.id === planFilter) && (year === 'All' || String(record.year) === year)
       && `${record.id} ${client?.name ?? ''} ${client?.email ?? ''} ${planName(record.planId)}`.toLowerCase().includes(search.toLowerCase())
   })
   const totalPages = Math.max(1, Math.ceil(filtered.length / 5))
   const currentPage = Math.min(page, totalPages)
   const rows = filtered.slice((currentPage - 1) * 5, currentPage * 5)
+
+  if (loading) return <LoadingState label="Loading plans…" />
+  if (error) return <ErrorState retry={retry} message={error} />
 
   return <>
       <PageHeader title="Subscriptions" description="Track filing plans, submission progress, and payment status." action={<ExcelExportButton filename="subscriptions" sheetName="Subscriptions" headers={['User', 'Email', 'Plan', 'Filing year', 'Filing for', 'Amount (EUR)', 'Submission status', 'Payment status']} rows={filtered.map((record) => [clientFor(record)?.name ?? 'Unknown user', clientFor(record)?.email, planName(record.planId), record.year, peopleLabels[record.people], subscriptionAmount(record, plans), progressFor(record).submissionStatus, progressFor(record).paymentStatus])} />} />

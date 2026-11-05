@@ -14,7 +14,7 @@ function Field({ label, value }: { label: string; value?: string }) {
 
 export function ClientFilingSummary({ submission, subscriptions, plans }: { submission: Submission; subscriptions: Subscription[]; plans: FilingPlan[] }) {
   const record = subscriptions.find((item) => item.submissionId === submission.id && item.clientId === submission.clientId)
-  const plan = plans.find((item) => item.id === record?.planId)
+  const plan = plans.find((item) => item.id === record?.planId || (record?.planId !== undefined && item.legacyId === record.planId))
   return <section className="rounded-lg border border-[var(--color-border)] p-4" aria-label="Filing summary">
     <h3 className="font-bold">Filing summary</h3>
     {!record ? <p className="mt-3 text-sm text-[var(--color-muted)]">No filing plan or fee provided for this submission.</p> : <dl className="mt-2 divide-y divide-[var(--color-border)] text-sm">

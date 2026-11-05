@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Badge } from '../components/ui/Badge'
 import { ExcelExportButton } from '../components/ui/ExcelExportButton'
 import { DataToolbar } from '../components/ui/DataToolbar'
-import { EmptyState } from '../components/ui/States'
+import { EmptyState, ErrorState, LoadingState } from '../components/ui/States'
+import { useAsync } from '../hooks/useAsync'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { filingFee, planService } from '../features/subscriptions/plans'
@@ -15,7 +16,9 @@ interface PlanDraft { id?: string; charges: FilingPlan['charges']; person: Filin
 const emptyDraft: PlanDraft = { charges: 'Filing', person: 'Single', status: 'Active', timePeriod: 'Year', name: '', description: '', price: '', partnerPrice: '', customPartnerPrice: false }
 
 export function PlansPage() {
-  const [plans, setPlans] = useState(() => planService.getPlans())
+  const { data, setData: setPlans, loading, error: loadError, retry } = useAsync(useCallback(() => planService.loadPlans(), []))
+  const plans = data ?? []
+  const [busy, setBusy] = useState(false)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [personFilter, setPersonFilter] = useState('All')
@@ -34,27 +37,34 @@ export function PlansPage() {
     setError('')
     setDraft({ id: plan.id, charges: plan.charges, person: plan.person, status: plan.status, timePeriod: plan.timePeriod, name: plan.name, description: plan.description, price: String(plan.price), partnerPrice: plan.partnerPrice === undefined ? '' : String(plan.partnerPrice), customPartnerPrice: plan.partnerPrice !== undefined })
   }
-  const save = () => {
-    if (!draft) return
+  const save = async () => {
+    if (!draft || busy) return
+    setBusy(true)
     try {
       if (!draft.price.trim() || (draft.person !== 'With partner' && draft.customPartnerPrice && !draft.partnerPrice.trim())) throw new Error('Enter all required prices.')
       const input = { charges: draft.charges, person: draft.person, status: draft.status, timePeriod: draft.timePeriod, name: draft.name, description: draft.description, price: Number(draft.price), partnerPrice: draft.person === 'With partner' ? Number(draft.price) : draft.customPartnerPrice ? Number(draft.partnerPrice) : undefined }
-      if (draft.id) planService.updatePlan(draft.id, input)
-      else planService.createPlan(input)
-      setPlans(planService.getPlans())
+      if (draft.id) await planService.updatePlan(draft.id, input)
+      else await planService.createPlan(input)
+      setPlans(await planService.getPlans())
       setDraft(null)
       toast.success(draft.id ? 'Plan updated.' : 'Plan created.')
     } catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to save plan.') }
+    finally { setBusy(false) }
   }
-  const remove = () => {
-    if (!deleting) return
+  const remove = async () => {
+    if (!deleting || busy) return
+    setBusy(true)
     try {
-      planService.deletePlan(deleting.id)
-      setPlans(planService.getPlans())
+      await planService.deletePlan(deleting.id)
+      setPlans(await planService.getPlans())
       setDeleting(null)
       toast.success('Plan deleted. Existing subscriptions were preserved.')
     } catch (deleteError) { toast.error(deleteError instanceof Error ? deleteError.message : 'Unable to delete plan.') }
+    finally { setBusy(false) }
   }
+
+  if (loading) return <LoadingState label="Loading plans…" />
+  if (loadError) return <ErrorState retry={retry} message={loadError} />
 
   return <>
     <PageHeader title="Plan" description="Create and manage filing plans, descriptions, and prices." action={<div className="flex items-center justify-end gap-3"><ExcelExportButton filename="plans" sheetName="Plans" headers={['Plan', 'Price (EUR)', 'Time period', 'Person', 'Charges', 'Status']} rows={rows.map((plan) => [plan.name, plan.price, plan.timePeriod, plan.person, plan.charges, plan.status])} /><button className="btn btn-primary" onClick={() => { setError(''); setDraft({ ...emptyDraft }) }}><Plus size={18} />Create plan</button></div>} />
@@ -76,7 +86,7 @@ export function PlansPage() {
       </table></div> : <EmptyState title="No plans found" message={hasFilters ? 'Try another search or clear the filters.' : 'Create a plan to get started.'} />}
     </section>
 
-    <Modal open={Boolean(draft)} title={draft?.id ? 'Update plan' : 'Create plan'} size="wide" onClose={() => setDraft(null)}>{draft && <form className="mt-5 space-y-6 pr-1" onSubmit={(event) => { event.preventDefault(); save() }}>
+    <Modal open={Boolean(draft)} title={draft?.id ? 'Update plan' : 'Create plan'} size="wide" onClose={() => !busy && setDraft(null)}>{draft && <form className="mt-5 space-y-6 pr-1" onSubmit={(event) => { event.preventDefault(); save() }}>
 
       {/* Plan details */}
       <fieldset>
@@ -130,9 +140,9 @@ export function PlansPage() {
       </fieldset>
 
       {error && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2.5 text-sm text-rose-700">{error}</p>}
-      <div className="flex justify-end gap-3 border-t border-[var(--color-border)] pt-4"><button type="button" className="btn btn-secondary" onClick={() => setDraft(null)}>Cancel</button><button type="submit" className="btn btn-primary">{draft.id ? 'Save changes' : 'Create plan'}</button></div>
+      <div className="flex justify-end gap-3 border-t border-[var(--color-border)] pt-4"><button type="button" className="btn btn-secondary" disabled={busy} onClick={() => setDraft(null)}>Cancel</button><button type="submit" disabled={busy} className="btn btn-primary">{busy ? 'Saving…' : draft.id ? 'Save changes' : 'Create plan'}</button></div>
     </form>}</Modal>
     <Modal open={Boolean(viewing)} title="Plan details" onClose={() => setViewing(null)}>{viewing && <div className="mt-4 max-h-[70vh] overflow-y-auto"><dl className="space-y-4 text-sm">{[['Plan name', viewing.name], ['Status', viewing.status], ['Person', viewing.person], ['Charges', viewing.charges], ['Time period', viewing.timePeriod], ['Description', viewing.description], ...(viewing.person === 'With partner' ? [[`Total for both people per ${viewing.timePeriod.toLowerCase()}`, formatMoney(viewing.price)]] : [[`Per person per ${viewing.timePeriod.toLowerCase()}`, formatMoney(viewing.price)], [`Both people per ${viewing.timePeriod.toLowerCase()}`, formatMoney(filingFee(viewing, 'both'))]])].map(([label, value]) => <div key={label}><dt className="text-[var(--color-muted)]">{label}</dt><dd className="mt-1 whitespace-pre-wrap break-words font-medium">{value}</dd></div>)}</dl><div className="mt-6 flex justify-end"><button className="btn btn-primary" onClick={() => { edit(viewing); setViewing(null) }}><Pencil size={16} />Edit plan</button></div></div>}</Modal>
-    <Modal open={Boolean(deleting)} title="Delete plan?" onClose={() => setDeleting(null)}><p className="mt-4 text-sm leading-6 text-[var(--color-muted)]">Delete <strong>{deleting?.name}</strong> from available plans? Existing subscriptions and their purchase amounts will be preserved.</p><div className="mt-6 flex justify-end gap-3"><button className="btn btn-secondary" onClick={() => setDeleting(null)}>Cancel</button><button className="btn bg-red-600 text-white hover:bg-red-700" onClick={remove}>Delete plan</button></div></Modal>
+    <Modal open={Boolean(deleting)} title="Delete plan?" onClose={() => !busy && setDeleting(null)}><p className="mt-4 text-sm leading-6 text-[var(--color-muted)]">Delete <strong>{deleting?.name}</strong> from available plans? Existing subscriptions and their purchase amounts will be preserved.</p><div className="mt-6 flex justify-end gap-3"><button className="btn btn-secondary" disabled={busy} onClick={() => setDeleting(null)}>Cancel</button><button className="btn bg-red-600 text-white hover:bg-red-700" disabled={busy} onClick={remove}>{busy ? 'Deleting…' : 'Delete plan'}</button></div></Modal>
   </>
 }

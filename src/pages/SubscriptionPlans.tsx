@@ -1,15 +1,19 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Check, Pencil, Save, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { PageHeader } from '../components/ui/PageHeader'
 import { filingFee, filingYears, planService } from '../features/subscriptions/plans'
 import type { FilingPeople, FilingPlan, FilingSelection } from '../features/subscriptions/plans'
 import { formatMoney } from '../utils/format'
+import { useAsync } from '../hooks/useAsync'
+import { ErrorState, LoadingState } from '../components/ui/States'
 
 const peopleLabels: Record<FilingPeople, string> = { me: 'Me', partner: 'My partner', both: 'Both (me and my partner)' }
 
 export function SubscriptionPlans() {
-  const [plans, setPlans] = useState(planService.getPlans)
+  const { data, setData: setPlans, loading, error, retry } = useAsync(useCallback(() => planService.getPlans(), []))
+  const plans = data ?? []
+  const [saving, setSaving] = useState(false)
   const [draft, setDraft] = useState<FilingPlan[] | null>(null)
   const [selections, setSelections] = useState<FilingSelection[]>([])
   const selectedYears = [...selections].sort((a, b) => b.year - a.year)
@@ -23,17 +27,21 @@ export function SubscriptionPlans() {
     ? current.filter((item) => item.year !== year)
     : [...current, { year, people: 'me' }])
   const updateYear = (year: number, patch: Partial<FilingSelection>) => setSelections((current) => current.map((item) => item.year === year ? { ...item, ...patch } : item))
-  const savePlans = () => {
-    if (!draft) return
+  const savePlans = async () => {
+    if (!draft || saving) return
+    setSaving(true)
     try {
-      planService.savePlans(draft)
-      setPlans(planService.getPlans())
+      await planService.savePlans(draft)
+      setPlans(await planService.getPlans())
       setDraft(null)
-      toast.success('Filing plans updated for this session.')
+      toast.success('Filing plans updated.')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to save plans.')
-    }
+    } finally { setSaving(false) }
   }
+
+  if (loading) return <LoadingState label="Loading plans…" />
+  if (error) return <ErrorState retry={retry} message={error} />
 
   return <>
     <PageHeader title="Filing plans" description="Manage filing plans and preview fees for each tax year." action={
@@ -42,7 +50,7 @@ export function SubscriptionPlans() {
 
     {draft && <form className="card mb-6 p-5 sm:p-6" onSubmit={(event) => { event.preventDefault(); savePlans() }}>
       <h2 className="text-lg font-bold">Manage filing plans</h2>
-      <p className="mt-1 text-sm text-[var(--color-muted)]">Changes apply to this admin session. Prices are in euros, per filing year.</p>
+      <p className="mt-1 text-sm text-[var(--color-muted)]">Prices are in euros, per filing year.</p>
       <div className="mt-5 grid gap-5 md:grid-cols-2">
         {draft.map((plan, index) => <fieldset key={plan.id} className="rounded-lg border border-[var(--color-border)] p-4">
           <legend className="px-1 font-semibold">{plan.name}</legend>
@@ -53,7 +61,7 @@ export function SubscriptionPlans() {
           </div>
         </fieldset>)}
       </div>
-      <div className="mt-5 flex justify-end gap-3"><button type="button" className="btn btn-secondary" onClick={() => setDraft(null)}><X size={16} />Cancel</button><button className="btn btn-primary" type="submit"><Save size={16} />Save plans</button></div>
+      <div className="mt-5 flex justify-end gap-3"><button type="button" className="btn btn-secondary" disabled={saving} onClick={() => setDraft(null)}><X size={16} />Cancel</button><button className="btn btn-primary" type="submit" disabled={saving}><Save size={16} />Save plans</button></div>
     </form>}
 
     <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
