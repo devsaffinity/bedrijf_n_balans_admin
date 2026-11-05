@@ -1,7 +1,7 @@
 export type ClientStatus = 'Active' | 'Awaiting submission' | 'Review needed' | 'Deleted'
 export type SubmissionStatus = 'Pending' | 'Accepted' | 'Rejected' | 'Deleted'
-export type PaymentStatus = 'Paid' | 'Pending' | 'Failed' | 'Refunded'
-export type DocumentStatus = 'Available' | 'Pending review' | 'Approved' | 'Rejected'
+export type PaymentStatus = 'Paid' | 'Pending' | 'Failed' | 'Refunded' | 'Confirmed' | 'Not provided'
+export type DocumentStatus = 'Available' | 'Pending review' | 'Approved' | 'Rejected' | 'Not provided'
 export type FilingStage = 'Not started' | 'Filing in Progress' | 'Submitted to Tax Authority'
 
 export interface PartnerInfo {
@@ -119,12 +119,18 @@ export interface FilingDetails {
 
 export interface Submission {
   id: string
+  source?: 'taxFilings'
+  reference?: string
+  sourceReviewStatus?: string
+  currentStep?: string
+  relatedPayments?: Payment[]
+  relatedDocuments?: ClientDocument[]
   clientId: string
   clientName: string
   clientEmail: string
   filingType: string
-  status: SubmissionStatus
-  progress: number
+  status?: SubmissionStatus
+  progress?: number
   submittedAt: string | null
   editingUnlocked?: boolean
   reopenedAt?: string

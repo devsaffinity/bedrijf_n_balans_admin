@@ -1,0 +1,13 @@
+import type { FilingPlan } from './plans'
+
+// Initial catalog requested for migration; never used as a display fallback.
+export const seedPlans: FilingPlan[] = [
+  { id: 'regular', name: 'Regular filing', status: 'Active', timePeriod: 'Year', charges: 'Filing', person: 'Single', description: 'If you are registered at a Dutch address for a full year, from 1 January to 31 December.', price: 40, partnerPrice: 50 },
+  { id: 'regular-partner', name: 'Regular filing', status: 'Active', timePeriod: 'Year', charges: 'Filing', person: 'With partner', description: 'If you are registered at a Dutch address for a full year, from 1 January to 31 December.', price: 50, partnerPrice: 50 },
+  { id: 'c-form', name: 'C-Form Online Filing for a single person', status: 'Active', timePeriod: 'Year', charges: 'Filing', person: 'Single', description: 'For a single person who was not registered at a Dutch address during the filing year (in other words a foreign tax applicant with no registered Dutch address).', price: 45 },
+  { id: 'c-form-partner', name: 'C-Form Online Filing for myself and partner', status: 'Active', timePeriod: 'Year', charges: 'Filing', person: 'With partner', description: 'For me and my partner who were both NOT registered at a Dutch address during the filing year (in other words foreign tax applicants with no registered Dutch address).', price: 90, partnerPrice: 90 },
+  { id: 'm-form', name: 'M-Form Online Filing for a single person', status: 'Active', timePeriod: 'Year', charges: 'Filing', person: 'Single', description: 'For a single person who was registered at a Dutch address for only a part of the filing year (not full year!).', price: 45 },
+  { id: 'm-form-partner', name: 'M-Form Online Filing for myself and partner', status: 'Active', timePeriod: 'Year', charges: 'Filing', person: 'With partner', description: 'For me and my partner who were both registered at a Dutch address for only a part of the filing year (not full year!).', price: 90, partnerPrice: 90 },
+  { id: 'mixed-regular-m-form', name: 'Mixed Regular + M-Form Online Filing', status: 'Active', timePeriod: 'Year', charges: 'Filing', person: 'With partner', description: 'Joint filing for one person who was registered at a Dutch address for the full filing year (1 January to 31 December) and a partner who was registered at a Dutch address for only part of that year. One person has Regular filing and the other has M-Form filing.', price: 90, partnerPrice: 90 },
+  { id: 'company', name: 'Own Company', status: 'Active', timePeriod: 'Year', charges: 'Filing', person: '-', description: 'Sole company or ZZP freelancer.', price: 100 },
+]

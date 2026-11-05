@@ -9,40 +9,41 @@ import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { EmptyState, ErrorState, LoadingState } from '../components/ui/States'
 import { useAsync } from '../hooks/useAsync'
-import { adminService } from '../services/mockService'
+import { submissionService } from '../services/submissionService'
 import { FilingProgress } from '../components/ui/FilingProgress'
 import { canReopenSubmission, submissionEditingAccess } from '../features/submissions/editingAccess'
 import { filingProgress, filingStages } from '../features/submissions/progress'
 import { SubmissionReviewDetails } from '../features/submissions/SubmissionReviewDetails'
-import { payments, documents } from '../mock/data'
 import type { FilingStage, Submission } from '../types/domain'
 import { formatDate } from '../utils/format'
+
+const unavailable = async () => { throw new Error('This update is not connected yet.') }
 
 const submissionStatuses = ['Draft', 'Submission Received', 'Payment Confirmed', 'Filing in Progress', 'Submitted to Tax Authority', 'Deleted']
 
 export function SubmissionsPage() {
-  const { data, loading, error, retry } = useAsync(useCallback(() => adminService.getSubmissions(), []))
+  const { data, loading, error, retry } = useAsync(useCallback(() => submissionService.getSubmissions(), []))
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
   const [editingSubmission, setEditingSubmission] = useState<Submission | null>(null)
-  const [selectedStatus, setSelectedStatus] = useState<FilingStage>('Not started')
+  const [selectedStatus, setSelectedStatus] = useState<FilingStage | ''>('')
   const [saving, setSaving] = useState(false)
   const [deletingSubmission, setDeletingSubmission] = useState<Submission | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [reopeningSubmission, setReopeningSubmission] = useState<Submission | null>(null)
   const [reopening, setReopening] = useState(false)
-  const rows = useMemo(() => (data ?? []).filter((item) => (status === 'All' || filingProgress(item, payments).current === status) && `${item.id} ${item.clientName} ${item.clientEmail}`.toLowerCase().includes(search.toLowerCase())), [data, search, status])
+  const rows = useMemo(() => (data ?? []).filter((item) => (status === 'All' || filingProgress(item, item.relatedPayments ?? []).current === status) && `${item.id} ${item.reference ?? ""} ${item.clientName} ${item.clientEmail}`.toLowerCase().includes(search.toLowerCase())), [data, search, status])
 
   const openStatusEditor = (submission: Submission) => {
     setEditingSubmission(submission)
-    setSelectedStatus(submission.filingStage ?? 'Not started')
+    setSelectedStatus(submission.filingStage ?? '')
   }
 
   const saveStatus = async () => {
     if (!editingSubmission) return
     setSaving(true)
     try {
-      await adminService.updateFilingStage(editingSubmission.id, selectedStatus)
+      await unavailable()
       setEditingSubmission(null)
       await retry()
       toast.success('Filing progress updated.')
@@ -57,7 +58,7 @@ export function SubmissionsPage() {
     if (!reopeningSubmission) return
     setReopening(true)
     try {
-      await adminService.reopenSubmission(reopeningSubmission.id)
+      await unavailable()
       setReopeningSubmission(null)
       await retry()
       toast.success('Submission reopened for editing.')
@@ -72,7 +73,7 @@ export function SubmissionsPage() {
     if (!deletingSubmission) return
     setDeleting(true)
     try {
-      await adminService.updateSubmissionStatus(deletingSubmission.id, 'Deleted')
+      await unavailable()
       setDeletingSubmission(null)
       await retry()
       toast.success('Submission deleted. Related records were preserved for audit history.')
@@ -85,10 +86,10 @@ export function SubmissionsPage() {
 
 
   if (loading) return <LoadingState label="Loading submissions…" />
-  if (error) return <ErrorState retry={retry} />
+  if (error) return <ErrorState retry={retry} message={error} />
 
   return <>
-    <PageHeader title="Submissions" description="Track filing milestones and update submission progress." action={<ExcelExportButton filename="submissions" sheetName="Submissions" headers={['Submission', 'Filing type', 'Client', 'Email', 'Updated', 'Current stage', 'Editing access', 'Filing progress']} rows={rows.map((item) => [item.id, item.filingType, item.clientName, item.clientEmail, formatDate(item.updatedAt), filingProgress(item, payments).current, submissionEditingAccess(item), filingProgress(item, payments).milestones.filter((milestone) => milestone.completed).map((milestone) => milestone.label).join('; ')])} />} />
+    <PageHeader title="Submissions" description="Track filing milestones and update submission progress." action={<ExcelExportButton filename="submissions" sheetName="Submissions" headers={['Submission', 'Filing type', 'Client', 'Email', 'Updated', 'Current stage', 'Editing access', 'Filing progress']} rows={rows.map((item) => [item.reference ?? item.id, item.filingType, item.clientName, item.clientEmail, formatDate(item.updatedAt), filingProgress(item, item.relatedPayments ?? []).current, submissionEditingAccess(item), filingProgress(item, item.relatedPayments ?? []).milestones.filter((milestone) => milestone.completed).map((milestone) => milestone.label).join('; ')])} />} />
     <section className="card overflow-hidden">
       <DataToolbar search={search} onSearch={setSearch} placeholder="Search by client or submission ID">
         <select className="field sm:w-44! sm:shrink-0" value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter submission status">
@@ -107,18 +108,18 @@ export function SubmissionsPage() {
           <th className="px-4 py-3 text-right">Actions</th>
         </tr></thead>
         <tbody>{rows.map((item) => <tr className="border-t border-(--color-border) hover:bg-slate-50" key={item.id}>
-          <td data-label="Submission" className="px-4 py-3 font-semibold">{item.id}<div className="mt-1 text-xs font-normal text-(--color-muted)">{item.filingType}</div></td>
+          <td data-label="Submission" className="px-4 py-3 font-semibold">{item.reference ?? item.id}<div className="mt-1 text-xs font-normal text-(--color-muted)">{item.filingType}</div></td>
           <td data-label="Client" className="px-4 py-3">{item.clientName}</td>
           <td data-label="Email" className="px-4 py-3 text-(--color-muted)">{item.clientEmail}</td>
           <td data-label="Updated" className="px-4 py-3 text-(--color-muted)">{formatDate(item.updatedAt)}</td>
-          <td data-label="Current stage" className="px-4 py-3"><Badge>{filingProgress(item, payments).current}</Badge></td>
+          <td data-label="Current stage" className="px-4 py-3"><Badge>{filingProgress(item, item.relatedPayments ?? []).current}</Badge></td>
           <td data-label="Editing access" className="px-4 py-3"><Badge>{submissionEditingAccess(item)}</Badge></td>
-          <td data-label="Filing progress" className="px-4 py-4"><FilingProgress submission={item} payments={payments} compact /></td>
+          <td data-label="Filing progress" className="px-4 py-4"><FilingProgress submission={item} payments={item.relatedPayments ?? []} compact /></td>
           <td data-label="Actions" className="px-4 py-3 text-right"><div className="flex min-w-max justify-end gap-1">
             <Link className="rounded-md p-2 text-slate-600 hover:bg-slate-100" to={`/submissions/${item.id}`} aria-label={`View ${item.id} details`} title="View details"><Eye size={18} /></Link>
             {item.status !== 'Deleted' && <button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" onClick={() => openStatusEditor(item)} aria-label={`Edit filing progress for ${item.id}`} title="Edit filing progress"><Pencil size={18} /></button>}
             {canReopenSubmission(item) && <button className="rounded-md p-2 text-violet-700 hover:bg-violet-50" onClick={() => setReopeningSubmission(item)} aria-label={`Reopen submission ${item.id}`} title="Reopen submission"><RotateCcw size={18} /></button>}
-            {item.status !== 'Deleted' && <button className="rounded-md p-2 text-red-600 hover:bg-red-50" onClick={() => setDeletingSubmission(item)} aria-label={`Delete ${item.id}`} title="Delete submission"><Trash2 size={18} /></button>}
+            {item.status !== 'Deleted' && <button className="rounded-md p-2 text-red-600 hover:bg-red-50" disabled onClick={() => setDeletingSubmission(item)} aria-label={`Delete ${item.id}`} title="Deletion is not connected yet"><Trash2 size={18} /></button>}
           </div></td>
         </tr>)}</tbody>
       </table></div> : <EmptyState />}
@@ -126,19 +127,20 @@ export function SubmissionsPage() {
     <Modal open={Boolean(editingSubmission)} title="Review submission & edit filing progress" size="review" onClose={() => !saving && setEditingSubmission(null)}>
       {editingSubmission && <>
         <div className="mt-4 grid max-h-[65vh] gap-6 overflow-y-auto pr-2 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <SubmissionReviewDetails submission={editingSubmission} payments={payments} documents={documents} />
+          <SubmissionReviewDetails submission={editingSubmission} payments={editingSubmission.relatedPayments ?? []} documents={editingSubmission.relatedDocuments ?? []} />
           <aside className="h-fit min-w-0 space-y-5 rounded-lg border border-[var(--color-border)] bg-slate-50 p-4 lg:sticky lg:top-0">
             <h3 className="font-bold">Filing progress</h3>
-            <FilingProgress submission={{ ...editingSubmission, filingStage: selectedStatus }} payments={payments} />
-            <p className="text-xs leading-5 text-[var(--color-muted)]">Submission Received and Payment Confirmed reflect the questionnaire and payment records. Update the filing stage below.</p>
+            <FilingProgress submission={{ ...editingSubmission, filingStage: selectedStatus || undefined }} payments={editingSubmission.relatedPayments ?? []} />
+            <p className="text-xs leading-5 text-[var(--color-muted)]">Submission Received and Payment Confirmed reflect the stored questionnaire and payment records.</p>
             <label className="block text-sm font-semibold" htmlFor="filing-stage">Filing stage</label>
-            <select id="filing-stage" className="field" value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value as FilingStage)} disabled={saving}>
-              {filingStages.map((stage) => <option key={stage} disabled={stage !== 'Not started' && !filingProgress(editingSubmission, payments).canStart}>{stage}</option>)}
+            <select id="filing-stage" className="field" value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value as FilingStage)} disabled>
+              <option value="">Not provided</option>
+              {filingStages.map((stage) => <option key={stage} disabled={stage !== 'Not started' && !filingProgress(editingSubmission, editingSubmission.relatedPayments ?? []).canStart}>{stage}</option>)}
             </select>
-            {!filingProgress(editingSubmission, payments).canStart && <p className="text-sm text-amber-700">Filing can begin once the questionnaire is submitted and payment is confirmed.</p>}
+            {!filingProgress(editingSubmission, editingSubmission.relatedPayments ?? []).canStart && <p className="text-sm text-amber-700">Filing-stage updates are not connected yet.</p>}
           </aside>
         </div>
-        <div className="mt-5 flex justify-end gap-3 border-t border-[var(--color-border)] pt-4"><button className="btn btn-secondary" disabled={saving} onClick={() => setEditingSubmission(null)}>Cancel</button><button className="btn btn-primary" disabled={saving || selectedStatus === (editingSubmission.filingStage ?? 'Not started')} onClick={saveStatus}>{saving ? 'Saving...' : 'Save progress'}</button></div>
+        <div className="mt-5 flex justify-end gap-3 border-t border-[var(--color-border)] pt-4"><button className="btn btn-secondary" disabled={saving} onClick={() => setEditingSubmission(null)}>Cancel</button><button className="btn btn-primary" disabled onClick={saveStatus}>{saving ? 'Saving...' : 'Save progress'}</button></div>
       </>}
     </Modal>
     <Modal open={Boolean(reopeningSubmission)} title="Reopen submission?" onClose={() => !reopening && setReopeningSubmission(null)}>

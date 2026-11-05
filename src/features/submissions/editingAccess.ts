@@ -1,10 +1,12 @@
 import type { Submission } from '../../types/domain'
 
 export function submissionEditingAccess(submission: Submission) {
+  if (submission.source === 'taxFilings' && submission.editingUnlocked === undefined) return 'Not provided'
   return submission.status !== 'Deleted' && (!submission.submittedAt || submission.editingUnlocked) ? 'Open for editing' : 'Locked'
 }
 
 export function canReopenSubmission(submission: Submission) {
+  if (submission.source === 'taxFilings') return false
   return submission.status !== 'Deleted' && Boolean(submission.submittedAt) && !submission.editingUnlocked
 }
 

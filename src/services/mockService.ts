@@ -35,7 +35,7 @@ export const adminService = {
     await wait(450)
     const submission = submissions.find((item) => item.id === id)
     if (!submission) throw new Error('Submission not found.')
-    if (!submissionTransitions[submission.status].includes(status)) throw new Error(`Cannot move a submission from ${submission.status} to ${status}.`)
+    if (!submission.status || !submissionTransitions[submission.status].includes(status)) throw new Error(`Cannot move a submission from ${submission.status} to ${status}.`)
     submission.status = status
     submission.updatedAt = new Date().toISOString()
     if (status === 'Deleted') submission.deletedAt = submission.updatedAt
