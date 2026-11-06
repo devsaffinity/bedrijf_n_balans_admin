@@ -9,39 +9,45 @@ import { Modal } from '../components/ui/Modal'
 import { Pagination } from '../components/ui/Pagination'
 import { EmptyState, ErrorState, LoadingState } from '../components/ui/States'
 import { useAsync } from '../hooks/useAsync'
-import { clients, submissions, payments } from '../mock/data'
 import { filingYears, findPlan, planService } from '../features/subscriptions/plans'
-import { subscriptionService, subscriptionStats, subscriptionAmount, subscriptionProgress } from '../features/subscriptions/subscriptions'
+import { subscriptionService, subscriptionStats, subscriptionAmount } from '../features/subscriptions/subscriptions'
 import type { Subscription } from '../features/subscriptions/subscriptions'
 import { formatDate, formatMoney } from '../utils/format'
 
 const peopleLabels = { me: 'Single', partner: 'Partner only', both: 'With partner' }
 
 export function SubscriptionsPage() {
-  const [records] = useState(subscriptionService.getAll)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
   const [planFilter, setPlanFilter] = useState('All')
   const [year, setYear] = useState('All')
   const [page, setPage] = useState(1)
   const [viewing, setViewing] = useState<Subscription | null>(null)
-  const { data: planData, loading, error, retry } = useAsync(useCallback(() => planService.getPlans(true), []))
-  const plans = planData ?? []
+  const { data, loading, error, retry } = useAsync(useCallback(async () => {
+    const plans = await planService.getPlans(true)
+    return { plans, records: await subscriptionService.loadSubscriptions(plans) }
+  }, []))
+  const plans = data?.plans ?? []
+  const records = data?.records ?? []
   const stats = subscriptionStats(records)
-  const planName = (id: string) => findPlan(plans, id)?.name ?? id
-  const clientFor = (record: Subscription) => clients.find((client) => client.id === record.clientId)
-  const progressFor = (record: Subscription) => subscriptionProgress(record, submissions, payments)
+  const planName = (id: string) => records.find((record) => record.planId === id)?.planName ?? findPlan(plans, id)?.name ?? id
+  const clientFor = (record: Subscription) => ({ name: record.clientName, email: record.clientEmail })
+  const progressFor = (record: Subscription) => ({
+    submission: record.submissionId ? { id: record.submissionId, progress: record.submissionProgress } : undefined,
+    submissionStatus: record.submissionStatus ?? 'Not submitted',
+    paymentStatus: record.paymentStatus ?? 'No payment',
+  })
   const viewingProgress = viewing ? progressFor(viewing) : null
   const filtered = records.filter((record) => {
     const client = clientFor(record)
     return (status === 'All' || progressFor(record).submissionStatus === status) && (planFilter === 'All' || findPlan(plans, record.planId)?.id === planFilter) && (year === 'All' || String(record.year) === year)
-      && `${record.id} ${client?.name ?? ''} ${client?.email ?? ''} ${planName(record.planId)}`.toLowerCase().includes(search.toLowerCase())
+      && `${record.id} ${record.reference ?? ''} ${client?.name ?? ''} ${client?.email ?? ''} ${planName(record.planId)}`.toLowerCase().includes(search.toLowerCase())
   })
   const totalPages = Math.max(1, Math.ceil(filtered.length / 5))
   const currentPage = Math.min(page, totalPages)
   const rows = filtered.slice((currentPage - 1) * 5, currentPage * 5)
 
-  if (loading) return <LoadingState label="Loading plans…" />
+  if (loading) return <LoadingState label="Loading subscriptions…" />
   if (error) return <ErrorState retry={retry} message={error} />
 
   return <>
@@ -69,14 +75,14 @@ export function SubscriptionsPage() {
               <td data-label="Plan" className="px-4 py-4 font-medium">{planName(record.planId)}</td><td data-label="Filing year" className="px-4 py-4">{record.year}</td><td data-label="Filing for" className="px-4 py-4">{peopleLabels[record.people]}</td><td data-label="Amount" className="px-4 py-4 font-semibold">{formatMoney(subscriptionAmount(record, plans))}</td>
               <td data-label="Submission status" className="px-4 py-4"><Badge>{progress.submissionStatus}</Badge></td>
               <td data-label="Payment status" className="px-4 py-4"><Badge>{progress.paymentStatus}</Badge></td>
-              <td data-label="Actions" className="px-4 py-4"><div className="flex gap-1"><button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" title="View subscription" aria-label={`View ${record.id}`} onClick={() => setViewing(record)}><Eye size={18} /></button></div></td>
+              <td data-label="Actions" className="px-4 py-4"><div className="flex gap-1"><button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" title="View subscription" aria-label={`View ${record.reference ?? record.id}`} onClick={() => setViewing(record)}><Eye size={18} /></button></div></td>
             </tr>
           })}</tbody>
         </table></div> : <EmptyState title="No subscriptions found" message="Try another search, status, plan or filing year." />}
         <Pagination page={currentPage} totalPages={totalPages} onChange={setPage} />
       </section>
     <Modal open={Boolean(viewing)} title="Subscription details" size="wide" onClose={() => setViewing(null)}>{viewing && <dl className="mt-5 grid max-h-[65vh] grid-cols-1 gap-x-8 gap-y-5 overflow-y-auto pr-2 text-sm sm:grid-cols-2 [&>div]:min-w-0">{[
-      ['Subscription', viewing.id], ['User', clientFor(viewing)?.name ?? 'Unknown user'], ['Email', clientFor(viewing)?.email ?? 'Not provided'], ['Plan', planName(viewing.planId)], ['Filing year', viewing.year], ['Filing for', peopleLabels[viewing.people]], ['Amount', formatMoney(subscriptionAmount(viewing, plans))], ['Purchased', viewing.purchasedAt ? formatDate(viewing.purchasedAt) : 'Not purchased'],
-    ].map(([label, value]) => <div key={label}><dt className="text-[var(--color-muted)]">{label}</dt><dd className="mt-1 break-words font-semibold">{value}</dd></div>)}<div><dt className="mb-1 text-[var(--color-muted)]">Submission status</dt><dd><Badge>{viewingProgress?.submissionStatus}</Badge>{viewingProgress?.submission && <Link className="mt-2 block text-[var(--color-brand)] hover:underline" to={`/submissions/${viewingProgress.submission.id}`}>{viewingProgress.submission.id} - {viewingProgress.submission.progress}% complete</Link>}</dd></div><div><dt className="mb-1 text-[var(--color-muted)]">Payment status</dt><dd><Badge>{viewingProgress?.paymentStatus}</Badge></dd></div></dl>}</Modal>
+      ['Subscription', viewing.reference ?? viewing.id], ['User', clientFor(viewing)?.name ?? 'Unknown user'], ['Email', clientFor(viewing)?.email ?? 'Not provided'], ['Plan', planName(viewing.planId)], ['Filing year', viewing.year], ['Filing for', peopleLabels[viewing.people]], ['Amount', formatMoney(subscriptionAmount(viewing, plans))], ['Purchased', viewing.purchasedAt ? formatDate(viewing.purchasedAt) : 'Not purchased'],
+    ].map(([label, value]) => <div key={label}><dt className="text-[var(--color-muted)]">{label}</dt><dd className="mt-1 break-words font-semibold">{value}</dd></div>)}<div><dt className="mb-1 text-[var(--color-muted)]">Submission status</dt><dd><Badge>{viewingProgress?.submissionStatus}</Badge>{viewingProgress?.submission && <Link className="mt-2 block text-[var(--color-brand)] hover:underline" to={`/submissions/${viewingProgress.submission.id}`}>{viewingProgress.submission.id} - {viewingProgress.submission.progress === undefined ? 'Not provided' : `${viewingProgress.submission.progress}% complete`}</Link>}</dd></div><div><dt className="mb-1 text-[var(--color-muted)]">Payment status</dt><dd><Badge>{viewingProgress?.paymentStatus}</Badge></dd></div></dl>}</Modal>
   </>
 }

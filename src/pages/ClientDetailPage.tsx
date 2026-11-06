@@ -6,6 +6,8 @@ import { ErrorState, LoadingState } from '../components/ui/States'
 import { useAsync } from '../hooks/useAsync'
 import { ClientDetailTabs } from '../features/clients/ClientDetailTabs'
 import { clientService } from '../services/clientService'
+import { submissionService } from '../services/submissionService'
+import { ClientDocuments, ClientFilings, ClientPayments } from '../features/clients/ClientRecords'
 import type { PartnerInfo } from '../types/domain'
 import { formatDate } from '../utils/format'
 
@@ -49,14 +51,16 @@ export function ClientDetailPage() {
   const [selection, setSelection] = useState({ clientId, tab: 'profile' })
   const active = selection.clientId === clientId ? selection.tab : 'profile'
   const loader = useCallback(async () => {
-    return { clientId, client: await clientService.getClient(clientId) }
+    const client = await clientService.getClient(clientId)
+    const filings = client ? await submissionService.getClientSubmissions(clientId) : []
+    return { clientId, client, filings }
   }, [clientId])
   const { data, loading, error, retry } = useAsync(loader)
   if (loading) return <LoadingState />
   if (error) return <ErrorState retry={retry} message={error} />
   if (!data || data.clientId !== clientId) return <LoadingState />
   if (!data.client) return <div className="card p-8 text-center">Client not found.</div>
-  const { client } = data
+  const { client, filings } = data
   const showPartner = client.partner && (client.maritalStatus === 'Married' || client.maritalStatus === 'Living together')
   const tabs = [{ id: 'profile', label: 'Profile' }, { id: 'filings', label: 'Filings' }, { id: 'documents', label: 'Documents' }]
 
@@ -76,7 +80,7 @@ export function ClientDetailPage() {
           </dl></div>
           <details className="group border-t border-[var(--color-border)]"><summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-5 py-4 text-sm font-semibold [&::-webkit-details-marker]:hidden"><span className="flex items-center gap-2"><Shield size={16} className="text-[var(--color-brand)]" />Identification</span><ChevronDown size={16} className="transition-transform group-open:rotate-180" /></summary><dl className="space-y-4 px-5 pb-5 text-sm"><InfoRow label="BSN (Burgerservicenummer)" value={maskBsn(client.bsn)} masked /><InfoRow label="5-digit code" value={client.fiveDigitCode} masked /></dl></details>
         </section>
-        <section className="card p-5"><h2 className="font-bold">Payments</h2><p className="mt-3 text-sm text-[var(--color-muted)]">Payment information is not available yet.</p></section>
+        <section className="card p-5"><h2 className="font-bold">Payments</h2><ClientPayments filings={filings} /></section>
       </aside>
       <div className="min-w-0 space-y-5">
         <div className="card overflow-hidden"><ClientDetailTabs id="client" label="Client sections" tabs={tabs} active={active} onChange={(tab) => setSelection({ clientId, tab })} /></div>
@@ -88,8 +92,8 @@ export function ClientDetailPage() {
           <section className="card p-5"><h2 className="font-bold">30% ruling</h2><dl className="mt-4 grid gap-5 text-sm sm:grid-cols-3"><InfoRow label="Has 30% ruling" value={yesNo(client.hasThirtyPercentRuling)} />{client.hasThirtyPercentRuling === true && <><InfoRow label="Start date" value={displayDate(client.thirtyPercentRulingStart)} /><InfoRow label="End date" value={displayDate(client.thirtyPercentRulingEnd)} /></>}</dl></section>
           {showPartner && <PartnerSection partner={client.partner!} />}
         </div>
-        <div id="client-panel-filings" role="tabpanel" aria-labelledby="client-tab-filings" hidden={active !== 'filings'} tabIndex={0} className="card p-5"><h2 className="font-bold">Filings</h2><p className="mt-3 text-sm text-[var(--color-muted)]">Filing details are not available yet.</p></div>
-        <div id="client-panel-documents" role="tabpanel" aria-labelledby="client-tab-documents" hidden={active !== 'documents'} tabIndex={0} className="card p-5"><h2 className="font-bold">Uploaded documents</h2><p className="mt-3 text-sm text-[var(--color-muted)]">Document information is not available yet.</p></div>
+        <div id="client-panel-filings" role="tabpanel" aria-labelledby="client-tab-filings" hidden={active !== 'filings'} tabIndex={0} className="card p-5"><h2 className="font-bold">Filings</h2><ClientFilings filings={filings} /></div>
+        <div id="client-panel-documents" role="tabpanel" aria-labelledby="client-tab-documents" hidden={active !== 'documents'} tabIndex={0} className="card p-5"><h2 className="font-bold">Uploaded documents</h2><ClientDocuments key={clientId} filings={filings} /></div>
       </div>
     </div>
   </>

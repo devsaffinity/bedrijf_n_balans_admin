@@ -152,6 +152,7 @@ export interface Payment {
   clientName: string
   clientEmail: string
   amount: number
+  currency?: string
   status: PaymentStatus
   date: string
   reference: string

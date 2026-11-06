@@ -20,5 +20,7 @@ export function getFirebaseServices() {
 export function getFirebaseStorage() {
   const { auth } = getFirebaseServices()
   if (!auth.app.options.storageBucket) throw new Error('File storage is not configured. Contact the administrator.')
-  return getStorage(auth.app)
+  const storage = getStorage(auth.app)
+  storage.maxOperationRetryTime = 15_000
+  return storage
 }

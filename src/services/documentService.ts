@@ -11,6 +11,7 @@ function fileError(error: unknown): Error {
       case 'storage/unauthenticated': return new Error('Your session has expired. Please sign in again.')
       case 'storage/unauthorized': return new Error('You do not have permission to access this file. Contact the administrator.')
       case 'storage/object-not-found': return new Error('This file could not be found in storage.')
+      case 'storage/retry-limit-exceeded': return new Error('The file took too long to load. Please try again or contact the administrator.')
       default: return new Error('Unable to load the file. Check your connection and try again.')
     }
   }
@@ -29,13 +30,22 @@ export const documentService = {
     }
   },
   async getFile(document: ClientDocument): Promise<Blob> {
+    let timeout: ReturnType<typeof setTimeout> | undefined
     try {
       if (!document.clientId || !document.submissionId || document.clientId.includes('/') || document.submissionId.includes('/')) throw new Error('This document has an invalid file location.')
       const path = document.storagePath
       const prefix = `users/${document.clientId}/taxFilings/${document.submissionId}/documents/`
       if (!path || !path.startsWith(prefix) || path.length <= prefix.length || path.split('/').some((part) => !part || part === '.' || part === '..')) throw new Error('This document has no valid file location.')
       // Authenticated SDK reads enforce Storage rules; no public download URL is generated.
-      return await getBlob(ref(getFirebaseStorage(), path))
+      // Bound the complete request, including authentication/token acquisition.
+      // A stalled connection must release both the preview and Download action.
+      return await Promise.race([
+        getBlob(ref(getFirebaseStorage(), path)),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(() => reject(new Error('The file took too long to load. Please try again or contact the administrator.')), 30_000)
+        }),
+      ])
     } catch (error) { throw fileError(error) }
+    finally { if (timeout !== undefined) clearTimeout(timeout) }
   },
 }

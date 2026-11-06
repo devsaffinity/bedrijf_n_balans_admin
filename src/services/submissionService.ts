@@ -1,5 +1,5 @@
 import { FirebaseError } from 'firebase/app'
-import { collection, doc, getDocFromServer, getDocsFromServer, Timestamp, type DocumentData } from 'firebase/firestore'
+import { collection, doc, getDocFromServer, getDocsFromServer, query, where, Timestamp, type DocumentData } from 'firebase/firestore'
 import type { Payment, Submission } from '../types/domain'
 import { mapFilingDocuments } from '../features/documents/mapping'
 import { getFirebaseServices } from './firebase'
@@ -99,7 +99,7 @@ export function mapTaxFiling(id: string, data: DocumentData): Submission {
   const paymentStatuses: Record<string, Payment['status']> = { confirmed: 'Confirmed', paid: 'Paid', pending: 'Pending', failed: 'Failed', refunded: 'Refunded' }
   submission.relatedPayments = amount === undefined ? [] : [{
     id: `${id}:payment`, submissionId: id, clientId: submission.clientId, clientName: submission.clientName, clientEmail: submission.clientEmail,
-    amount, status: paymentStatuses[text(payment.status)] ?? 'Not provided', date: '', reference: '',
+    amount, currency: text(payment.currency) || undefined, status: paymentStatuses[text(payment.status)] ?? 'Not provided', date: '', reference: '',
   }]
   submission.relatedDocuments = mapFilingDocuments(id, data)
   return submission
@@ -111,6 +111,15 @@ function readError(error: unknown): Error {
 }
 
 export const submissionService = {
+  async getClientSubmissions(clientId: string): Promise<Submission[]> {
+    if (!clientId || clientId.includes('/')) return []
+    try {
+      const snapshot = await getDocsFromServer(query(collection(getFirebaseServices().db, 'taxFilings'), where('userId', '==', clientId)))
+      return snapshot.docs.map((item) => mapTaxFiling(item.id, item.data()))
+        .filter((item) => item.clientId === clientId)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id))
+    } catch (error) { throw readError(error) }
+  },
   async getSubmissions(): Promise<Submission[]> {
     try {
       const snapshot = await getDocsFromServer(collection(getFirebaseServices().db, 'taxFilings'))
