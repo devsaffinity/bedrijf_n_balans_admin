@@ -2,7 +2,7 @@ import { submissionEditingAccess } from './editingAccess'
 import { Link } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import type { ClientDocument, Payment, Submission } from '../../types/domain'
-import { formatDate, formatMoney } from '../../utils/format'
+import { formatDate, formatPaymentAmount } from '../../utils/format'
 
 export function SubmissionReviewDetails({ submission, payments, documents }: { submission: Submission; payments: Payment[]; documents: ClientDocument[] }) {
   const relatedPayments = payments.filter((item) => item.submissionId === submission.id && item.clientId === submission.clientId)
@@ -26,7 +26,7 @@ export function SubmissionReviewDetails({ submission, payments, documents }: { s
       </section>)}</div> : <p className="text-sm text-[var(--color-muted)]">No questionnaire answers available.</p>}
     </section>
     <section className="rounded-lg border border-[var(--color-border)] p-4"><h3 className="font-bold">Related payments</h3>
-      {relatedPayments.length ? <ul className="mt-3 divide-y divide-[var(--color-border)]">{relatedPayments.map((payment) => <li className="flex flex-wrap items-start justify-between gap-3 py-3 text-sm" key={payment.id}><div><p className="font-semibold">{formatMoney(payment.amount)}</p><p className="mt-1 break-all text-xs text-[var(--color-muted)]">{payment.reference}</p><p className="mt-1 text-xs text-[var(--color-muted)]">{formatDate(payment.date)}</p></div><Badge>{payment.status}</Badge></li>)}</ul> : <p className="mt-3 text-sm text-[var(--color-muted)]">No payment recorded for this submission.</p>}
+      {relatedPayments.length ? <ul className="mt-3 divide-y divide-[var(--color-border)]">{relatedPayments.map((payment) => <li className="flex flex-wrap items-start justify-between gap-3 py-3 text-sm" key={payment.id}><div><p className="font-semibold">{formatPaymentAmount(payment.amount, payment.currency ?? (submission.source === 'taxFilings' ? undefined : 'EUR'))}</p><p className="mt-1 break-all text-xs text-[var(--color-muted)]">{payment.reference}</p><p className="mt-1 text-xs text-[var(--color-muted)]">{formatDate(payment.date)}</p></div><Badge>{payment.status}</Badge></li>)}</ul> : <p className="mt-3 text-sm text-[var(--color-muted)]">No payment recorded for this submission.</p>}
     </section>
     <section className="rounded-lg border border-[var(--color-border)] p-4"><h3 className="font-bold">Supporting documents</h3>
       {relatedDocuments.length ? <ul className="mt-3 divide-y divide-[var(--color-border)]">{relatedDocuments.map((document) => <li className="flex flex-wrap items-start justify-between gap-3 py-3 text-sm" key={document.id}><div className="min-w-0"><p className="break-words font-semibold">{document.name}</p><p className="mt-1 text-xs text-[var(--color-muted)]">{document.type} · {document.size} · {formatDate(document.uploadedAt)}</p></div><Badge>{document.status}</Badge></li>)}</ul> : <p className="mt-3 text-sm text-[var(--color-muted)]">No documents linked to this submission.</p>}

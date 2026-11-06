@@ -1,6 +1,8 @@
 import { FirebaseError } from 'firebase/app'
-import { collection, doc, getDocFromServer, getDocsFromServer, query, where, Timestamp, type DocumentData } from 'firebase/firestore'
-import type { Payment, Submission } from '../types/domain'
+import { collection, deleteField, doc, getDocFromServer, getDocsFromServer, query, runTransaction, serverTimestamp, where, Timestamp, type DocumentData } from 'firebase/firestore'
+import type { FilingStage, Payment, Submission } from '../types/domain'
+import { applyFilingStage } from '../features/submissions/progress'
+import { canReopenSubmission } from '../features/submissions/editingAccess'
 import { mapFilingDocuments } from '../features/documents/mapping'
 import { getFirebaseServices } from './firebase'
 
@@ -92,7 +94,15 @@ export function mapTaxFiling(id: string, data: DocumentData): Submission {
     sourceReviewStatus: text(review.status) || undefined, currentStep: text(data.currentStep) || undefined,
     createdAt: timestamp(data.createdAt) || undefined,
     clientId: text(data.userId), clientName: text(person.name) || 'Not provided', clientEmail: text(person.email) || 'Not provided',
-    filingType: filingType || 'Not provided', submittedAt: null, updatedAt: timestamp(data.updatedAt), answers,
+    filingType: filingType || 'Not provided', submittedAt: timestamp(data.submittedAt) || null, updatedAt: timestamp(data.updatedAt), answers,
+    status: data.status === 'Deleted' || timestamp(data.deletedAt) ? 'Deleted' : undefined,
+    deletedAt: timestamp(data.deletedAt) || undefined,
+    editingUnlocked: typeof data.editingUnlocked === 'boolean' ? data.editingUnlocked : undefined,
+    reopenedAt: timestamp(data.reopenedAt) || undefined,
+    filingStage: ['Not started', 'Filing in Progress', 'Submitted to Tax Authority'].includes(data.filingStage) ? data.filingStage : undefined,
+    filingStartedAt: timestamp(data.filingStartedAt) || undefined,
+    taxAuthoritySubmittedAt: timestamp(data.taxAuthoritySubmittedAt) || undefined,
+    progress: typeof data.progress === 'number' && Number.isFinite(data.progress) && data.progress >= 0 && data.progress <= 100 ? data.progress : undefined,
   }
   const payment = object(data.payment)
   const amount = number(payment.amount)
@@ -110,7 +120,47 @@ function readError(error: unknown): Error {
   return new Error('Unable to load submissions. Check your connection and try again.')
 }
 
+async function updateSubmission(id: string, action: 'stage' | 'reopen' | 'delete', stage?: FilingStage): Promise<void> {
+  if (!id || id.includes('/')) throw new Error('Invalid submission ID.')
+  try {
+    const db = getFirebaseServices().db
+    const reference = doc(db, 'taxFilings', id)
+    await runTransaction(db, async (transaction) => {
+      const snapshot = await transaction.get(reference)
+      if (!snapshot.exists()) throw new Error('Submission not found.')
+      const raw = snapshot.data()
+      const submission = mapTaxFiling(id, raw)
+      if (submission.status === 'Deleted') throw new Error('Deleted submissions cannot be edited.')
+      const now = serverTimestamp()
+      if (action === 'delete') {
+        transaction.update(reference, { status: 'Deleted', deletedAt: now, updatedAt: now })
+      } else if (action === 'reopen') {
+        if (!canReopenSubmission(submission)) throw new Error('Only locked, submitted questionnaires can be reopened.')
+        transaction.update(reference, { editingUnlocked: true, reopenedAt: now, updatedAt: now })
+      } else {
+        if (!stage) throw new Error('Choose a valid filing stage.')
+        applyFilingStage(submission, stage, submission.relatedPayments ?? [], new Date().toISOString())
+        transaction.update(reference, {
+          filingStage: stage,
+          filingStartedAt: stage === 'Not started' ? deleteField() : raw.filingStartedAt instanceof Timestamp ? raw.filingStartedAt : now,
+          taxAuthoritySubmittedAt: stage === 'Submitted to Tax Authority' ? raw.taxAuthoritySubmittedAt instanceof Timestamp ? raw.taxAuthoritySubmittedAt : now : deleteField(),
+          updatedAt: now,
+        })
+      }
+    })
+  } catch (error) {
+    if (error instanceof FirebaseError) {
+      if (error.code === 'permission-denied') throw new Error('You do not have permission to update submissions. Contact the administrator.')
+      throw new Error('Unable to update the submission. Check your connection and try again.')
+    }
+    throw error
+  }
+}
+
 export const submissionService = {
+  updateFilingStage: (id: string, stage: FilingStage) => updateSubmission(id, 'stage', stage),
+  reopenSubmission: (id: string) => updateSubmission(id, 'reopen'),
+  softDeleteSubmission: (id: string) => updateSubmission(id, 'delete'),
   async getClientSubmissions(clientId: string): Promise<Submission[]> {
     if (!clientId || clientId.includes('/')) return []
     try {

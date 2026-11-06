@@ -17,7 +17,7 @@ export function filingProgress(submission: Submission, payments: Payment[]) {
   ]
   const completed = milestones.filter((item) => item.completed).length
   const current = submission.status === 'Deleted' ? 'Deleted' : stage && stage !== 'Not started' ? stage : received === false ? 'Draft' : received === true ? paymentConfirmed ? 'Payment Confirmed' : 'Submission Received' : 'Not provided'
-  return { milestones, completed, current, canStart: !fromFirestore && Boolean(submission.submittedAt) && payment?.status === 'Paid' && submission.status !== 'Deleted' }
+  return { milestones, completed, current, canStart: received === true && paymentConfirmed === true && submission.status !== 'Deleted' }
 }
 
 export function applyFilingStage(submission: Submission, stage: FilingStage, payments: Payment[], now: string) {

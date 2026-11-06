@@ -7,7 +7,7 @@ import { Modal } from '../../components/ui/Modal'
 import { DocumentFilePreview } from '../documents/DocumentFilePreview'
 import { documentService } from '../../services/documentService'
 import type { ClientDocument, Submission } from '../../types/domain'
-import { formatDate } from '../../utils/format'
+import { formatDate, formatPaymentAmount } from '../../utils/format'
 
 const submissionLink = (id: string) => `/submissions/${encodeURIComponent(id)}`
 
@@ -15,14 +15,14 @@ export function ClientPayments({ filings }: { filings: Submission[] }) {
   const payments = filings.flatMap((filing) => (filing.relatedPayments ?? []).map((payment) => ({ payment, filing })))
   return <>{payments.length ? <ul className="mt-3 divide-y divide-[var(--color-border)] text-sm">{payments.map(({ payment, filing }) => {
     // A missing currency is not evidence that the payment was made in EUR.
-    const amount = `${payment.amount.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${payment.currency ? ` ${payment.currency}` : ''}`
+    const amount = formatPaymentAmount(payment.amount, payment.currency)
     return <li className="space-y-2 py-3" key={payment.id}><Link className="break-words font-semibold text-[var(--color-brand)]" to={submissionLink(filing.id)}>{filing.reference ?? filing.id}</Link><div className="flex flex-wrap items-center justify-between gap-2"><span className="font-semibold">{amount}</span><Badge>{payment.status}</Badge></div></li>
   })}</ul> : <p className="mt-3 text-sm text-[var(--color-muted)]">No payments found for this client.</p>}</>
 }
 
 export function ClientFilings({ filings }: { filings: Submission[] }) {
   return filings.length ? <div className="mt-3 divide-y divide-[var(--color-border)]">{filings.map((filing) => <div className="space-y-2 py-4 text-sm" key={filing.id}>
-    <div className="flex flex-wrap items-center justify-between gap-2"><Link className="break-words font-semibold text-[var(--color-brand)]" to={submissionLink(filing.id)}>{filing.reference ?? filing.id}</Link><Badge>{filing.sourceReviewStatus ?? 'Not provided'}</Badge></div>
+    <div className="flex flex-wrap items-center justify-between gap-2"><Link className="break-words font-semibold text-[var(--color-brand)]" to={submissionLink(filing.id)}>{filing.reference ?? filing.id}</Link><Badge>{filing.status === 'Deleted' ? 'Deleted' : filing.sourceReviewStatus ?? 'Not provided'}</Badge></div>
     <p>{filing.filingType}</p><p className="text-[var(--color-muted)]">Created {formatDate(filing.createdAt ?? '')}</p>
   </div>)}</div> : <p className="mt-3 text-sm text-[var(--color-muted)]">No filings found for this client.</p>
 }

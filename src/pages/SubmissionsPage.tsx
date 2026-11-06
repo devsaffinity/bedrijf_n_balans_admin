@@ -17,8 +17,6 @@ import { SubmissionReviewDetails } from '../features/submissions/SubmissionRevie
 import type { FilingStage, Submission } from '../types/domain'
 import { formatDate } from '../utils/format'
 
-const unavailable = async () => { throw new Error('This update is not connected yet.') }
-
 const submissionStatuses = ['Draft', 'Submission Received', 'Payment Confirmed', 'Filing in Progress', 'Submitted to Tax Authority', 'Deleted']
 
 export function SubmissionsPage() {
@@ -32,7 +30,7 @@ export function SubmissionsPage() {
   const [deleting, setDeleting] = useState(false)
   const [reopeningSubmission, setReopeningSubmission] = useState<Submission | null>(null)
   const [reopening, setReopening] = useState(false)
-  const rows = useMemo(() => (data ?? []).filter((item) => (status === 'All' || filingProgress(item, item.relatedPayments ?? []).current === status) && `${item.id} ${item.reference ?? ""} ${item.clientName} ${item.clientEmail}`.toLowerCase().includes(search.toLowerCase())), [data, search, status])
+  const rows = useMemo(() => (data ?? []).filter((item) => (status === 'All' ? item.status !== 'Deleted' : filingProgress(item, item.relatedPayments ?? []).current === status) && `${item.id} ${item.reference ?? ""} ${item.clientName} ${item.clientEmail}`.toLowerCase().includes(search.toLowerCase())), [data, search, status])
 
   const openStatusEditor = (submission: Submission) => {
     setEditingSubmission(submission)
@@ -40,13 +38,13 @@ export function SubmissionsPage() {
   }
 
   const saveStatus = async () => {
-    if (!editingSubmission) return
+    if (!editingSubmission || !selectedStatus || saving) return
     setSaving(true)
     try {
-      await unavailable()
+      await submissionService.updateFilingStage(editingSubmission.id, selectedStatus)
       setEditingSubmission(null)
-      await retry()
-      toast.success('Filing progress updated.')
+      if (await retry()) toast.success('Filing progress updated.')
+      else toast.error('Filing progress was saved, but the list could not refresh. Please reload before making another change.')
     } catch (saveError) {
       toast.error(saveError instanceof Error ? saveError.message : 'Unable to update submission status.')
     } finally {
@@ -55,13 +53,13 @@ export function SubmissionsPage() {
   }
 
   const confirmReopen = async () => {
-    if (!reopeningSubmission) return
+    if (!reopeningSubmission || reopening) return
     setReopening(true)
     try {
-      await unavailable()
+      await submissionService.reopenSubmission(reopeningSubmission.id)
       setReopeningSubmission(null)
-      await retry()
-      toast.success('Submission reopened for editing.')
+      if (await retry()) toast.success('Submission reopened for editing.')
+      else toast.error('Submission was reopened, but the list could not refresh. Please reload before making another change.')
     } catch (reopenError) {
       toast.error(reopenError instanceof Error ? reopenError.message : 'Unable to reopen submission.')
     } finally {
@@ -70,13 +68,13 @@ export function SubmissionsPage() {
   }
 
   const deleteSubmission = async () => {
-    if (!deletingSubmission) return
+    if (!deletingSubmission || deleting) return
     setDeleting(true)
     try {
-      await unavailable()
+      await submissionService.softDeleteSubmission(deletingSubmission.id)
       setDeletingSubmission(null)
-      await retry()
-      toast.success('Submission deleted. Related records were preserved for audit history.')
+      if (await retry()) toast.success('Submission deleted. Related records were preserved for audit history.')
+      else toast.error('Submission was deleted, but the list could not refresh. Please reload before making another change.')
     } catch (deleteError) {
       toast.error(deleteError instanceof Error ? deleteError.message : 'Unable to delete submission.')
     } finally {
@@ -119,7 +117,7 @@ export function SubmissionsPage() {
             <Link className="rounded-md p-2 text-slate-600 hover:bg-slate-100" to={`/submissions/${item.id}`} aria-label={`View ${item.id} details`} title="View details"><Eye size={18} /></Link>
             {item.status !== 'Deleted' && <button className="rounded-md p-2 text-slate-600 hover:bg-slate-100" onClick={() => openStatusEditor(item)} aria-label={`Edit filing progress for ${item.id}`} title="Edit filing progress"><Pencil size={18} /></button>}
             {canReopenSubmission(item) && <button className="rounded-md p-2 text-violet-700 hover:bg-violet-50" onClick={() => setReopeningSubmission(item)} aria-label={`Reopen submission ${item.id}`} title="Reopen submission"><RotateCcw size={18} /></button>}
-            {item.status !== 'Deleted' && <button className="rounded-md p-2 text-red-600 hover:bg-red-50" disabled onClick={() => setDeletingSubmission(item)} aria-label={`Delete ${item.id}`} title="Deletion is not connected yet"><Trash2 size={18} /></button>}
+            {item.status !== 'Deleted' && <button className="rounded-md p-2 text-red-600 hover:bg-red-50" onClick={() => setDeletingSubmission(item)} aria-label={`Delete ${item.id}`} title="Delete submission"><Trash2 size={18} /></button>}
           </div></td>
         </tr>)}</tbody>
       </table></div> : <EmptyState />}
@@ -133,14 +131,14 @@ export function SubmissionsPage() {
             <FilingProgress submission={{ ...editingSubmission, filingStage: selectedStatus || undefined }} payments={editingSubmission.relatedPayments ?? []} />
             <p className="text-xs leading-5 text-[var(--color-muted)]">Submission Received and Payment Confirmed reflect the stored questionnaire and payment records.</p>
             <label className="block text-sm font-semibold" htmlFor="filing-stage">Filing stage</label>
-            <select id="filing-stage" className="field" value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value as FilingStage)} disabled>
+            <select id="filing-stage" className="field" value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value as FilingStage)} disabled={saving}>
               <option value="">Not provided</option>
               {filingStages.map((stage) => <option key={stage} disabled={stage !== 'Not started' && !filingProgress(editingSubmission, editingSubmission.relatedPayments ?? []).canStart}>{stage}</option>)}
             </select>
-            {!filingProgress(editingSubmission, editingSubmission.relatedPayments ?? []).canStart && <p className="text-sm text-amber-700">Filing-stage updates are not connected yet.</p>}
+            {!filingProgress(editingSubmission, editingSubmission.relatedPayments ?? []).canStart && <p className="text-sm text-amber-700">The questionnaire must be submitted and payment confirmed before filing starts.</p>}
           </aside>
         </div>
-        <div className="mt-5 flex justify-end gap-3 border-t border-[var(--color-border)] pt-4"><button className="btn btn-secondary" disabled={saving} onClick={() => setEditingSubmission(null)}>Cancel</button><button className="btn btn-primary" disabled onClick={saveStatus}>{saving ? 'Saving...' : 'Save progress'}</button></div>
+        <div className="mt-5 flex justify-end gap-3 border-t border-[var(--color-border)] pt-4"><button className="btn btn-secondary" disabled={saving} onClick={() => setEditingSubmission(null)}>Cancel</button><button className="btn btn-primary" disabled={saving || !selectedStatus} onClick={saveStatus}>{saving ? 'Saving...' : 'Save progress'}</button></div>
       </>}
     </Modal>
     <Modal open={Boolean(reopeningSubmission)} title="Reopen submission?" onClose={() => !reopening && setReopeningSubmission(null)}>

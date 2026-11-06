@@ -12,8 +12,10 @@ export function useAsync<T>(loader: () => Promise<T>) {
     try {
       const result = await loader()
       if (current === request.current) setData(result)
+      return current === request.current
     } catch (error) {
       if (current === request.current) setError(error instanceof Error ? error.message : 'We could not load this information. Please try again.')
+      return false
     } finally { if (current === request.current) setLoading(false) }
   }, [loader])
   useEffect(() => { void load(); return invalidate }, [load, invalidate])
