@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
 
 export function getFirebaseServices() {
   const config = {
@@ -12,6 +13,12 @@ export function getFirebaseServices() {
   if (Object.values(config).some((value) => !value)) {
     throw new Error('Firebase login is not configured. Contact the administrator.')
   }
-  const app = getApps().length ? getApp() : initializeApp(config)
+  const app = getApps().length ? getApp() : initializeApp({ ...config, storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || undefined })
   return { auth: getAuth(app), db: getFirestore(app) }
+}
+
+export function getFirebaseStorage() {
+  const { auth } = getFirebaseServices()
+  if (!auth.app.options.storageBucket) throw new Error('File storage is not configured. Contact the administrator.')
+  return getStorage(auth.app)
 }

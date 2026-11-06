@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   // Expose only the public web-app configuration, never service-account credentials.
-  const publicKeys = ['API_KEY', 'AUTH_DOMAIN', 'PROJECT_ID', 'APP_ID']
+  const publicKeys = ['API_KEY', 'AUTH_DOMAIN', 'PROJECT_ID', 'APP_ID', 'STORAGE_BUCKET']
   return {
     plugins: [react(), tailwindcss()],
     define: Object.fromEntries(publicKeys.map((key) => [

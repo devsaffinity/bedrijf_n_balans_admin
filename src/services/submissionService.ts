@@ -1,12 +1,12 @@
 import { FirebaseError } from 'firebase/app'
 import { collection, doc, getDocFromServer, getDocsFromServer, Timestamp, type DocumentData } from 'firebase/firestore'
-import type { ClientDocument, Payment, Submission } from '../types/domain'
+import type { Payment, Submission } from '../types/domain'
+import { mapFilingDocuments } from '../features/documents/mapping'
 import { getFirebaseServices } from './firebase'
 
 type Data = Record<string, unknown>
 const object = (value: unknown): Data => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Data : {}
 const text = (value: unknown) => typeof value === 'string' ? value.trim() : ''
-const list = (value: unknown): unknown[] => Array.isArray(value) ? value : []
 function timestamp(value: unknown): string {
   if (value instanceof Timestamp) return value.toDate().toISOString()
   // Do not interpret DD/MM/YYYY questionnaire answers as server timestamps.
@@ -90,6 +90,7 @@ export function mapTaxFiling(id: string, data: DocumentData): Submission {
   const submission: Submission = {
     id, source: 'taxFilings', reference: text(data.reference) || undefined,
     sourceReviewStatus: text(review.status) || undefined, currentStep: text(data.currentStep) || undefined,
+    createdAt: timestamp(data.createdAt) || undefined,
     clientId: text(data.userId), clientName: text(person.name) || 'Not provided', clientEmail: text(person.email) || 'Not provided',
     filingType: filingType || 'Not provided', submittedAt: null, updatedAt: timestamp(data.updatedAt), answers,
   }
@@ -100,15 +101,7 @@ export function mapTaxFiling(id: string, data: DocumentData): Submission {
     id: `${id}:payment`, submissionId: id, clientId: submission.clientId, clientName: submission.clientName, clientEmail: submission.clientEmail,
     amount, status: paymentStatuses[text(payment.status)] ?? 'Not provided', date: '', reference: '',
   }]
-  submission.relatedDocuments = list(object(data.documents).files).map((file, index): ClientDocument => {
-    const item = object(file)
-    const bytes = number(item.sizeBytes)
-    return {
-      id: `${id}:file:${index}`, clientId: submission.clientId, submissionId: id, owner: submission.clientName,
-      name: text(item.name) || 'Not provided', type: text(item.extension).toUpperCase() || 'Not provided',
-      size: bytes === undefined ? 'Not provided' : `${bytes.toLocaleString('en-US')} bytes`, uploadedAt: '', status: 'Not provided',
-    }
-  })
+  submission.relatedDocuments = mapFilingDocuments(id, data)
   return submission
 }
 

@@ -123,6 +123,7 @@ export interface Submission {
   reference?: string
   sourceReviewStatus?: string
   currentStep?: string
+  createdAt?: string
   relatedPayments?: Payment[]
   relatedDocuments?: ClientDocument[]
   clientId: string
@@ -159,6 +160,8 @@ export interface Payment {
 
 export interface ClientDocument {
   id: string
+  storagePath?: string
+  submissionReference?: string
   clientId: string
   submissionId: string
   owner: string
